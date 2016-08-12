@@ -15,7 +15,7 @@ $(eval $(call add_cmd,$(strip cc  ),CC  ,gcc))
 $(eval $(call add_cmd,$(strip ccld),CCLD,gcc))
 
 define add_csource
-$O$1$2-$(3:.c=.o) : $1$3
+$O$1$2-$(3:.c=.o) : $1$3 Makefile
 	$$(mkdir_p)
 	$$(cc) -c $$< -o $$@
 cleanfiles += $O$1$2-$(3:.c=.o)
@@ -23,9 +23,9 @@ endef
 
 define add_bin
 all : $O$1$2
-$O$1$2 : $$(addprefix $O$1$2-,$$($2-sources:.c=.o))
+$O$1$2 : $$(addprefix $O$1$2-,$$($2-sources:.c=.o)) Makefile
 	$$(mkdir_p)
-	$$(ccld) $$+ -o $$@
+	$$(ccld) $$(addprefix $O$1$2-,$$($2-sources:.c=.o)) -o $$@
 $$(foreach s,$$($2-sources),$$(eval $$(call add_csource,$1,$2,$$s)))
 cleanfiles += $O$1$2
 endef
