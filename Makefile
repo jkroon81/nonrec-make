@@ -24,8 +24,9 @@ $(eval $(call add_silent_cmd,mkdir_p,mkdir -p))
 define add_csource
 dirs := $(sort $(dirs) $O$1)
 $O$1$2-$(3:.c=.o) : $1$3 Makefile | $O$1
-	$$(cc) -c $$< -o $$@
-cleanfiles += $O$1$2-$(3:.c=.o)
+	$$(cc) $$($2-ccflags) -MMD -MP -c $$< -o $$@
+-include $O$1$2-$(3:.c=.d)
+cleanfiles += $O$1$2-$(3:.c=.o) $O$1$2-$(3:.c=.d)
 endef
 
 define add_bin
