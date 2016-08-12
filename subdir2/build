@@ -1,2 +1,2 @@
 bin := test4
-test4-sources := main.c
+test4-sources := main4.c
