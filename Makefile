@@ -1,8 +1,19 @@
+print-filter := $(.VARIABLES) print-filter \n
+
 O ?= build/
+
 cleanfiles :=
 mkdirs :=
 default_v := 0
-print-filter := $(.VARIABLES) \n print-filter
+
+first = $(firstword $1)
+rest = $(wordlist 2,$(words $1),$1)
+reverse = $(strip $(if $1,$(call reverse,$(call rest,$1)) $(call first,$1)))
+
+define \n
+
+
+endef
 
 define add_cmd
 $1_0 = @echo "$2 $$(@:$O%=%)";
@@ -54,23 +65,15 @@ all :
 
 $(eval $(call add_subdir,))
 
+cleanfiles := $(strip $(cleanfiles))
+
 $(mkdirs) :
 	$(mkdir_p) $@
 
-cleanfiles := $(strip $(cleanfiles))
-
 clean :
 	rm -f $(cleanfiles)
-	for d in $(mkdirs); do \
-	    if [ -d $$d ]; then \
-	        rmdir --ignore-fail-on-non-empty -p $$d; \
-	    fi \
-	done
-
-define \n
-
-
-endef
+	$(foreach d,$(call reverse,$(mkdirs)),\
+	  [ -d $d ] && rmdir $d || true$(\n))
 
 print-variables :
 	@$(foreach v,$(sort $(filter-out $(print-filter),$(.VARIABLES))),\
