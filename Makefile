@@ -6,14 +6,14 @@ dirs :=
 default_v := 0
 
 define add_cmd
-$1_0 = @echo "$2 $$@";
-$1_  = $$($1_$$(default_v))
-$1   = $$($1_$$(V))$3
+$1_0 = @echo "$2 $$(@:$O%=%)";
+$1_  = $$($1_$(default_v))
+$1   = $$($1_$(V))$3
 endef
 
 define add_silent_cmd
 $1_0 = @
-$1_  = $$($1_$$(default_v))
+$1_  = $$($1_$(default_v))
 $1   = $$($1_$$(V))$2
 endef
 
