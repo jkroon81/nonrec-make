@@ -1,6 +1,2 @@
-*.o
 *~
-/subdir1/subdir2/test3
-/subdir1/test2
-/subdir2/test4
-/test1
+/build
