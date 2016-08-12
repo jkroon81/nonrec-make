@@ -44,7 +44,7 @@ endef
 define add_subdir
 bin :=
 subdir :=
-include $1build.mk
+include $1include.mk
 $$(foreach b,$$(bin),$$(eval $$(call add_bin,$1,$$b)))
 $$(foreach s,$$(subdir),$$(eval $$(call add_subdir,$1$$s/)))
 endef
