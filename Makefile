@@ -8,11 +8,7 @@ default_v := 0
 no-deps := $(filter clean print-%,$(MAKECMDGOALS))
 
 tvar = $(patsubst ./%,%,$(builddir)/$1)
-first = $(firstword $1)
-rest = $(wordlist 2,$(words $1),$1)
-reverse = $(strip $(if $1,$(call reverse,$(call rest,$1)) $(call first,$1)))
 trim-end = $(if $(filter %$1,$2),$(call trim-end,$1,$(patsubst %$1,%,$2)),$2)
-libs = $(call normpath,$($1-libs))
 normpath = $(patsubst $(CURDIR)/%,%,$(abspath $1))
 
 o := $(call trim-end,/,$O)
@@ -56,14 +52,12 @@ $$(builddir)/$1-%.d $$(builddir)/$1-%.o : $$(srcdir)/%.c \
 endef
 
 define add_asmsrc
-mkdirs := $$(sort $$(mkdirs) $$(builddir))
 $$(eval $$(call tvar,$1-$(2:.S=.o))-asflags := $$($1-asflags))
 cleanfiles += $$(builddir)/$1-$(2:.S=.o)
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.S=.o))
 endef
 
 define add_csrc
-mkdirs := $$(sort $$(mkdirs) $$(builddir))
 $$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$($1-ccflags))
 $$(if $(no-deps),,$$(eval -include $$(builddir)/$1-$(2:.c=.d)))
 cleanfiles += $$(builddir)/$1-$(2:.c=.o) $$(builddir)/$1-$(2:.c=.d)
@@ -71,8 +65,7 @@ $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.c=.o))
 endef
 
 define add_bin
-mkdirs := $$(sort $$(mkdirs) $$(builddir))
-$$(eval $$(call tvar,$1)-libs := $$(call libs,$1))
+$$(eval $$(call tvar,$1)-libs := $$(call normpath,$$($1-libs)))
 $$(eval $$(call tvar,$1)-objs :=)
 $$(foreach s,$$(filter %.S,$$($1-sources)),$$(eval $$(call add_asmsrc,$1,$$s)))
 $$(foreach s,$$(filter %.c,$$($1-sources)),$$(eval $$(call add_csrc,$1,$$s)))
@@ -92,7 +85,6 @@ undefine $1-libs
 endef
 
 define add_lib
-mkdirs := $$(sort $$(mkdirs) $$(builddir))
 $$(eval $$(call tvar,$1)-objs :=)
 $$(foreach s,$$(filter %.S,$$($1-sources)),$$(eval $$(call add_asmsrc,$1,$$s)))
 $$(foreach s,$$(filter %.c,$$($1-sources)),$$(eval $$(call add_csrc,$1,$$s)))
@@ -116,6 +108,7 @@ builddir := $$(if $o,$o,.)$$(if $1,/$1)
 bin :=
 lib :=
 subdir :=
+mkdirs := $$(builddir) $$(mkdirs)
 include $$(srcdir)/include.mk
 subdir := $$(call trim-end,/,$$(subdir))
 $$(foreach b,$$(bin),$$(eval $$(call add_bin,$$b)))
@@ -139,8 +132,7 @@ $(mkdirs) :
 
 clean :
 	rm -f $(cleanfiles)
-	$(if $o,$(foreach d,$(call reverse,$(mkdirs)),\
-	  [ -d $d ] && rmdir $d || true$(\n)))
+	$(if $o,$(foreach d,$(mkdirs),[ -d $d ] && rmdir $d || true$(\n)))
 
 print-%: ; $(q)echo $*=$($*)
 
