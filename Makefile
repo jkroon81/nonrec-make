@@ -1,6 +1,6 @@
 print-filter := $(.VARIABLES) print-filter \n
 
-O ?= build/
+O ?= build
 
 cleanfiles :=
 mkdirs :=
@@ -9,7 +9,10 @@ default_v := 0
 first = $(firstword $1)
 rest = $(wordlist 2,$(words $1),$1)
 reverse = $(strip $(if $1,$(call reverse,$(call rest,$1)) $(call first,$1)))
+trim-end = $(if $(filter %$1,$2),$(call trim-end,$1,$(patsubst %$1,%,$2)),$2)
 normpath = $(patsubst $(CURDIR)/%,%,$(abspath $1))
+
+o := $(call trim-end,/,$O)/
 
 define \n
 
@@ -17,7 +20,7 @@ define \n
 endef
 
 define add_cmd
-$1_0 = @echo "$2 $$(@:$O%=%)";
+$1_0 = @echo "$2 $$(@:$o%=%)";
 $1_  = $$($1_$(default_v))
 $1   = $$($1_$(V))$3
 endef
@@ -32,38 +35,38 @@ $(eval $(call add_cmd,$(strip cc    ),CC    ,gcc))
 $(eval $(call add_cmd,$(strip ccld  ),CCLD  ,gcc))
 
 define add_csource
-mkdirs := $(sort $(mkdirs) $O$1)
-$O$1$2-$(3:.c=.o)-ccflags := $$($2-ccflags)
-$O$1$2-$(3:.c=.o) : $1$3 Makefile $1include.mk | $O$1
+mkdirs := $(sort $(mkdirs) $o$1)
+$o$1$2-$(3:.c=.o)-ccflags := $$($2-ccflags)
+$o$1$2-$(3:.c=.o) : $1$3 Makefile $1include.mk | $o$1
 	$$(cc) $$($$@-ccflags) -MMD -MP -c $$< -o $$@
--include $O$1$2-$(3:.c=.d)
-cleanfiles += $O$1$2-$(3:.c=.o) $O$1$2-$(3:.c=.d)
+-include $o$1$2-$(3:.c=.d)
+cleanfiles += $o$1$2-$(3:.c=.o) $o$1$2-$(3:.c=.d)
 undefine $2-ccflags
 endef
 
 define add_bin
-mkdirs := $(sort $(mkdirs) $O$1)
-$O$1$2-objs := $$(addprefix $O$1$2-,$$($2-sources:.c=.o))
-$O$1$2-libs := $$(call normpath,$$(addprefix $O$1,$$($2-libs)))
-all : $O$1$2
-$O$1$2 : $$($O$1$2-objs) $$($O$1$2-libs) Makefile $1include.mk | $O$1
+mkdirs := $(sort $(mkdirs) $o$1)
+$o$1$2-objs := $$(addprefix $o$1$2-,$$($2-sources:.c=.o))
+$o$1$2-libs := $$(call normpath,$$(addprefix $o$1,$$($2-libs)))
+all : $o$1$2
+$o$1$2 : $$($o$1$2-objs) $$($o$1$2-libs) Makefile $1include.mk | $o$1
 	$$(ccld) $$($$@-objs) $$($$@-libs) -o $$@
 $$(foreach s,$$($2-sources),$$(eval $$(call add_csource,$1,$2,$$s)))
-cleanfiles += $O$1$2
+cleanfiles += $o$1$2
 undefine $2-sources
 undefine $2-libs
 endef
 
 define add_lib
-mkdirs := $(sort $(mkdirs) $O$1)
-$O$1lib$2.a-objs := $$(addprefix $O$1$2-,$$($2-sources:.c=.o))
-all : $O$1lib$2.a
-$O$1lib$2.a : $$($O$1lib$2.a-objs) Makefile $1include.mk | $O$1
+mkdirs := $(sort $(mkdirs) $o$1)
+$o$1lib$2.a-objs := $$(addprefix $o$1$2-,$$($2-sources:.c=.o))
+all : $o$1lib$2.a
+$o$1lib$2.a : $$($o$1lib$2.a-objs) Makefile $1include.mk | $o$1
 	$(q)rm -f $$@
 	$$(ar) cru $$@ $$($$@-objs)
 	$$(ranlib) $$@
 $$(foreach s,$$($2-sources),$$(eval $$(call add_csource,$1,$2,$$s)))
-cleanfiles += $O$1lib$2.a
+cleanfiles += $o$1lib$2.a
 undefine $2-sources
 endef
 
@@ -74,7 +77,7 @@ subdir :=
 include $1include.mk
 $$(foreach b,$$(bin),$$(eval $$(call add_bin,$1,$$b)))
 $$(foreach l,$$(lib),$$(eval $$(call add_lib,$1,$$l)))
-$$(foreach s,$$(subdir),$$(eval $$(call add_subdir,$1$$s/)))
+$$(foreach s,$$(subdir),$$(eval $$(call add_subdir,$1$$(call trim-end,/,$$s)/)))
 undefine bin
 undefine lib
 undefine subdir
@@ -91,8 +94,8 @@ $(mkdirs) :
 
 clean :
 	rm -f $(cleanfiles)
-	$(foreach d,$(call reverse,$(mkdirs)),\
-	  [ -d $d ] && rmdir $d || true$(\n))
+	$(if $o,$(foreach d,$(call reverse,$(mkdirs)),\
+	  [ -d $d ] && rmdir $d || true$(\n)))
 
 print-%: ; @echo $*=$($*)
 print-variables :
