@@ -78,7 +78,6 @@ endef
 
 define add_bin
 $$(eval $$(call tvar,$1)-libs := $$(call normpath,$$($1-libs)))
-$$(eval $$(call tvar,$1)-objs :=)
 $$(foreach s,$$(filter %.S,$$(sort $$($1-sources))),$$(eval $$(call add_asmsrc,$1,$$s)))
 $$(foreach s,$$(filter %.c,$$(sort $$($1-sources))),$$(eval $$(call add_csrc,$1,$$s)))
 $$(eval $$(call add_asm_rule,$1))
@@ -97,7 +96,6 @@ undefine $1-libs
 endef
 
 define add_lib
-$$(eval $$(call tvar,$1)-objs :=)
 $$(foreach s,$$(filter %.S,$$(sort $$($1-sources))),$$(eval $$(call add_asmsrc,$1,$$s)))
 $$(foreach s,$$(filter %.c,$$(sort $$($1-sources))),$$(eval $$(call add_csrc,$1,$$s)))
 $$(eval $$(call add_asm_rule,$1))
