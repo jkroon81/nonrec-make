@@ -5,7 +5,7 @@ O ?= build
 cleanfiles :=
 mkdirs :=
 default_v := 0
-is-cleaning := $(filter clean,$(MAKECMDGOALS))
+no-deps := $(filter clean print-%,$(MAKECMDGOALS))
 
 tvar = $(patsubst ./%,%,$(builddir)/$1)
 first = $(firstword $1)
@@ -67,7 +67,7 @@ define add_csrc
 mkdirs := $$(sort $$(mkdirs) $$(builddir))
 $$(eval $$(call tvar,$1-$(2:.c=.o))-file := $$(srcdir)/$2)
 $$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$($1-ccflags))
-$$(if $(is-cleaning),,$$(eval -include $$(builddir)/$1-$(2:.c=.d)))
+$$(if $(no-deps),,$$(eval -include $$(builddir)/$1-$(2:.c=.d)))
 cleanfiles += $$(builddir)/$1-$(2:.c=.o) $$(builddir)/$1-$(2:.c=.d)
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.c=.o))
 endef
@@ -157,4 +157,4 @@ print-variables :
 	  )\
 	)
 
-.PHONY : all clean print-variables
+.PHONY : all clean print-% print-data-base print-variables
