@@ -69,9 +69,9 @@ $$(eval $$(call tvar,$1)-libs := $$(call normpath,$$($1-libs)))
 $$(eval $$(call tvar,$1)-objs :=)
 $$(foreach s,$$(filter %.S,$$($1-sources)),$$(eval $$(call add_asmsrc,$1,$$s)))
 $$(foreach s,$$(filter %.c,$$($1-sources)),$$(eval $$(call add_csrc,$1,$$s)))
-all : $$(builddir)/$1
 $$(eval $$(call add_asm_rule,$1))
 $$(eval $$(call add_c_rule,$1))
+all : $$(builddir)/$1
 $$(builddir)/$1 : $$($$(call tvar,$1)-objs) \
                   $$($$(call tvar,$1)-libs) \
                   Makefile \
@@ -88,9 +88,9 @@ define add_lib
 $$(eval $$(call tvar,$1)-objs :=)
 $$(foreach s,$$(filter %.S,$$($1-sources)),$$(eval $$(call add_asmsrc,$1,$$s)))
 $$(foreach s,$$(filter %.c,$$($1-sources)),$$(eval $$(call add_csrc,$1,$$s)))
-all : $$(builddir)/$1
 $$(eval $$(call add_asm_rule,$1))
 $$(eval $$(call add_c_rule,$1))
+all : $$(builddir)/$1
 $$(builddir)/$1 : $$($$(call tvar,$1)-objs) \
                   Makefile \
                   $$(srcdir)/include.mk \
