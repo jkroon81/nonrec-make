@@ -43,21 +43,20 @@ $$(builddir)/$1-%.o : $$(srcdir)/%.S \
                       Makefile \
                       $$(srcdir)/include.mk \
                       | $$(builddir)
-	$$(as) $$($$@-asflags) $$($$@-file) -o $$@
+	$$(as) $$($$@-asflags) $$< -o $$@
 endef
 
 define add_c_rule
-$$(builddir)/$1-%.d $$(builddir)/$1-%.o : Makefile \
+$$(builddir)/$1-%.d $$(builddir)/$1-%.o : $$(srcdir)/%.c \
+                                          Makefile \
                                           $$(srcdir)/include.mk \
                                           | $$(builddir)
-	$$(cc) $$($$(basename $$@).o-ccflags) -MMD -MP \
-	    -c $$($$(basename $$@).o-file) \
+	$$(cc) $$($$(basename $$@).o-ccflags) -MMD -MP -c $$< \
 	       -o $$(basename $$@).o
 endef
 
 define add_asmsrc
 mkdirs := $$(sort $$(mkdirs) $$(builddir))
-$$(eval $$(call tvar,$1-$(2:.S=.o))-file := $$(srcdir)/$2)
 $$(eval $$(call tvar,$1-$(2:.S=.o))-asflags := $$($1-asflags))
 cleanfiles += $$(builddir)/$1-$(2:.S=.o)
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.S=.o))
@@ -65,7 +64,6 @@ endef
 
 define add_csrc
 mkdirs := $$(sort $$(mkdirs) $$(builddir))
-$$(eval $$(call tvar,$1-$(2:.c=.o))-file := $$(srcdir)/$2)
 $$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$($1-ccflags))
 $$(if $(no-deps),,$$(eval -include $$(builddir)/$1-$(2:.c=.d)))
 cleanfiles += $$(builddir)/$1-$(2:.c=.o) $$(builddir)/$1-$(2:.c=.d)
