@@ -1,2 +1,2 @@
-bin := test3
-test3-sources := main3.c
+bin = test3
+test3-sources = main3.c
