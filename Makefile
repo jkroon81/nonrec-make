@@ -51,9 +51,7 @@ define add_csource
 mkdirs := $$(sort $$(mkdirs) $$(builddir))
 $$(eval $$(call tvar,$1-$(2:.c=.o))-csource := $$(srcdir)/$2)
 $$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$($1-ccflags))
-$$(builddir)/$1-$(2:.c=.o) : Makefile \
-                             $$(srcdir)/include.mk \
-                             | $$(builddir)
+$$(builddir)/$1-$(2:.c=.o) : Makefile $$(srcdir)/include.mk | $$(builddir)
 -include $$(builddir)/$1-$(2:.c=.d)
 cleanfiles += $$(builddir)/$1-$(2:.c=.o) $$(builddir)/$1-$(2:.c=.d)
 endef
