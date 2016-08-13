@@ -1,4 +1,4 @@
 bin = test4
-lib = foo
+lib = libfoo.a
 test4-sources = main4.c
-foo-sources = foo.c
+libfoo.a-sources = foo.c
