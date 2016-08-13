@@ -23,29 +23,27 @@ define \n
 endef
 
 define add_cmd
-$1_0 = @echo "$2 $$(@:$o/%=%)";
+$1_0 = @echo "$2 $$(patsubst $o/%,%,$3)";
 $1_  = $$($1_$(default_v))
-$1   = $$($1_$(V))$3
+$1   = $$($1_$(V))$4
 endef
 
 q_0 = @
 q_  = $(q_$(default_v))
 q   = $(q_$(V))
 
-$(eval $(call add_cmd,$(strip ar    ),AR    ,ar))
-$(eval $(call add_cmd,$(strip ranlib),RANLIB,ranlib))
-$(eval $(call add_cmd,$(strip cc    ),CC    ,gcc))
-$(eval $(call add_cmd,$(strip ccld  ),CCLD  ,gcc))
+$(eval $(call add_cmd,$(strip ar    ),AR    ,$$@  ,ar))
+$(eval $(call add_cmd,$(strip ranlib),RANLIB,$$@  ,ranlib))
+$(eval $(call add_cmd,$(strip cc    ),CC    ,$$*.o,gcc))
+$(eval $(call add_cmd,$(strip ccld  ),CCLD  ,$$@  ,gcc))
 
 %.a :
 	$(q)rm -f $@
 	$(ar) cru $@ $($@-objs)
 	$(ranlib) $@
 
-%.d :
-
-%.o :
-	$(cc) $($@-ccflags) -MMD -MP -c $($@-csource) -o $@
+%.d %.o :
+	$(cc) $($*.o-ccflags) -MMD -MP -c $($*.o-csource) -o $*.o
 
 define add_csource
 mkdirs := $$(sort $$(mkdirs) $$(builddir))
