@@ -52,7 +52,10 @@ $$(builddir)/$1-%.d $$(builddir)/$1-%.o : $$(srcdir)/%.c \
 endef
 
 define add_asmsrc
-$$(eval $$(call tvar,$1-$(2:.S=.o))-asflags := $$($1-asflags) $$($1-$2-asflags))
+$$(eval $$(call tvar,$1-$(2:.S=.o))-asflags := $$(patsubst %,%,\
+  $$(asflags) \
+  $$($1-asflags) \
+  $$($1-$2-asflags)))
 cleanfiles += $$(builddir)/$1-$(2:.S=.o)
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.S=.o))
 $$(eval $$(call prepend-unique,$$(call objdir,$1,$2,$$(builddir)),mkdirs))
@@ -61,7 +64,10 @@ undefine $1-$2-asflags
 endef
 
 define add_csrc
-$$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$($1-ccflags) $$($1-$2-ccflags))
+$$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$(patsubst %,%,\
+  $$(ccflags) \
+  $$($1-ccflags) \
+  $$($1-$2-ccflags)))
 $$(if $(no-deps),,$$(eval -include $$(builddir)/$1-$(2:.c=.d)))
 cleanfiles += $$(builddir)/$1-$(2:.c=.o) $$(builddir)/$1-$(2:.c=.d)
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.c=.o))
@@ -115,8 +121,12 @@ bin :=
 lib :=
 subdir :=
 mkdirs := $$(builddir) $$(mkdirs)
+asflags := $$($$(call normpath,$$(builddir)/..)-asflags)
+ccflags := $$($$(call normpath,$$(builddir)/..)-ccflags)
 include $$(srcdir)/include.mk
 subdir := $$(call trim-end,/,$$(subdir))
+$$(eval $$(builddir)-asflags := $$(asflags))
+$$(eval $$(builddir)-ccflags := $$(ccflags))
 $$(foreach b,$$(bin),$$(eval $$(call add_bin,$$b)))
 $$(foreach l,$$(lib),$$(eval $$(call add_lib,$$l)))
 $$(foreach s,$$(subdir),$$(eval $$(call add_subdir,$$(if $1,$1/)$$s)))
@@ -125,6 +135,8 @@ undefine builddir
 undefine bin
 undefine lib
 undefine subdir
+undefine asflags
+undefine ccflags
 endef
 
 all :
