@@ -33,22 +33,40 @@ q   = $(q_$(V))
 $(eval $(call add_cmd,$(strip ar    ),AR    ,ar,$$@))
 $(eval $(call add_cmd,$(strip ranlib),RANLIB,ranlib,$$@))
 $(eval $(call add_cmd,$(strip as    ),AS    ,as,$$@))
-$(eval $(call add_cmd,$(strip cc    ),CC    ,gcc,$$(basename $$@).o))
+$(eval $(call add_cmd,$(strip cc    ),CC    ,gcc -c,$$(basename $$@).o))
+$(eval $(call add_cmd,$(strip ccas  ),CCAS  ,gcc -S,$$(basename $$@).s))
+$(eval $(call add_cmd,$(strip cpp   ),CPP   ,gcc -E,$$(basename $$@).i))
 $(eval $(call add_cmd,$(strip ccld  ),CCLD  ,gcc,$$@))
 
-define add_asm_rule
+define add_asm_to_obj_rule
 $$(builddir)/$1-%.o : $$(srcdir)/%.S \
                       Makefile \
                       $$(srcdir)/include.mk
 	$$(as) $$($$@-asflags) $$< -o $$@
 endef
 
-define add_c_rule
+define add_c_to_obj_rule
 $$(builddir)/$1-%.d $$(builddir)/$1-%.o : $$(srcdir)/%.c \
                                           Makefile \
                                           $$(srcdir)/include.mk
-	$$(cc) $$($$(basename $$@).o-ccflags) -MMD -MP -c $$< \
+	$$(cc) $$($$(basename $$@).o-ccflags) -MMD -MP $$< \
 	       -o $$(basename $$@).o
+endef
+
+define add_c_to_asm_rule
+$$(builddir)/$1-%.d $$(builddir)/$1-%.s : $$(srcdir)/%.c \
+                                          Makefile \
+                                          $$(srcdir)/include.mk
+	$$(ccas) $$($$(basename $$@).o-ccflags) -MMD -MP $$< \
+	         -o $$(basename $$@).s
+endef
+
+define add_c_to_cpp_rule
+$$(builddir)/$1-%.d $$(builddir)/$1-%.i : $$(srcdir)/%.c \
+                                          Makefile \
+                                          $$(srcdir)/include.mk
+	$$(cpp) $$($$(basename $$@).o-ccflags) -MMD -MP $$< \
+	        -o $$(basename $$@).i
 endef
 
 define add_asmsrc
@@ -69,10 +87,18 @@ $$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$(patsubst %,%,\
   $$($1-ccflags) \
   $$($1-$2-ccflags)))
 $$(if $(no-deps),,$$(eval -include $$(builddir)/$1-$(2:.c=.d)))
-cleanfiles += $$(builddir)/$1-$(2:.c=.o) $$(builddir)/$1-$(2:.c=.d)
+cleanfiles += \
+  $$(builddir)/$1-$(2:.c=.o) \
+  $$(builddir)/$1-$(2:.c=.d) \
+  $$(builddir)/$1-$(2:.c=.s) \
+  $$(builddir)/$1-$(2:.c=.i)
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.c=.o))
 $$(eval $$(call prepend-unique,$$(call objdir,$1,$2,$$(builddir)),mkdirs))
 $$(builddir)/$1-$(2:.c=.o) : | $$(call objdir,$1,$2,$$(builddir))
+$$(builddir)/$1-$(2:.c=.s) : | $$(call objdir,$1,$2,$$(builddir))
+$$(builddir)/$1-$(2:.c=.i) : | $$(call objdir,$1,$2,$$(builddir))
+asm : $$(builddir)/$1-$(2:.c=.s)
+cpp : $$(builddir)/$1-$(2:.c=.i)
 undefine $1-$2-ccflags
 endef
 
@@ -80,8 +106,10 @@ define add_bin
 $$(eval $$(call tvar,$1)-libs := $$(call normpath,$$($1-libs)))
 $$(foreach s,$$(filter %.S,$$(sort $$($1-sources))),$$(eval $$(call add_asmsrc,$1,$$s)))
 $$(foreach s,$$(filter %.c,$$(sort $$($1-sources))),$$(eval $$(call add_csrc,$1,$$s)))
-$$(eval $$(call add_asm_rule,$1))
-$$(eval $$(call add_c_rule,$1))
+$$(eval $$(call add_asm_to_obj_rule,$1))
+$$(eval $$(call add_c_to_obj_rule,$1))
+$$(eval $$(call add_c_to_asm_rule,$1))
+$$(eval $$(call add_c_to_cpp_rule,$1))
 all : $$(builddir)/$1
 $$(builddir)/$1 : $$($$(call tvar,$1)-objs) \
                   $$($$(call tvar,$1)-libs) \
@@ -98,8 +126,10 @@ endef
 define add_lib
 $$(foreach s,$$(filter %.S,$$(sort $$($1-sources))),$$(eval $$(call add_asmsrc,$1,$$s)))
 $$(foreach s,$$(filter %.c,$$(sort $$($1-sources))),$$(eval $$(call add_csrc,$1,$$s)))
-$$(eval $$(call add_asm_rule,$1))
-$$(eval $$(call add_c_rule,$1))
+$$(eval $$(call add_asm_to_obj_rule,$1))
+$$(eval $$(call add_c_to_obj_rule,$1))
+$$(eval $$(call add_c_to_asm_rule,$1))
+$$(eval $$(call add_c_to_cpp_rule,$1))
 all : $$(builddir)/$1
 $$(builddir)/$1 : $$($$(call tvar,$1)-objs) \
                   Makefile \
@@ -163,4 +193,4 @@ print-variables :
 	  )\
 	)
 
-.PHONY : all clean print-% print-data-base print-variables
+.PHONY : all asm clean cpp print-% print-data-base print-variables
