@@ -37,6 +37,16 @@ $(eval $(call add_cmd,$(strip ranlib),RANLIB,ranlib))
 $(eval $(call add_cmd,$(strip cc    ),CC    ,gcc))
 $(eval $(call add_cmd,$(strip ccld  ),CCLD  ,gcc))
 
+%.a :
+	$(q)rm -f $@
+	$(ar) cru $@ $($@-objs)
+	$(ranlib) $@
+
+%.d :
+
+%.o :
+	$(cc) $($@-ccflags) -MMD -MP -c $($@-csource) -o $@
+
 define add_csource
 mkdirs := $$(sort $$(mkdirs) $$(builddir))
 $$(eval $$(call tvar,$1-$(2:.c=.o))-csource := $$(srcdir)/$2)
@@ -44,7 +54,6 @@ $$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$($1-ccflags))
 $$(builddir)/$1-$(2:.c=.o) : Makefile \
                              $$(srcdir)/include.mk \
                              | $$(builddir)
-	$$(cc) $$($$@-ccflags) -MMD -MP -c $$($$@-csource) -o $$@
 -include $$(builddir)/$1-$(2:.c=.d)
 cleanfiles += $$(builddir)/$1-$(2:.c=.o) $$(builddir)/$1-$(2:.c=.d)
 endef
@@ -75,9 +84,6 @@ $$(builddir)/lib$1.a : $$($$(call tvar,lib$1.a)-objs) \
                        Makefile \
                        $$(srcdir)/include.mk \
                        | $$(builddir)
-	$(q)rm -f $$@
-	$$(ar) cru $$@ $$($$@-objs)
-	$$(ranlib) $$@
 $$(foreach s,$$($1-sources),$$(eval $$(call add_csource,$1,$$s)))
 cleanfiles += $$(builddir)/lib$1.a
 undefine $1-sources
