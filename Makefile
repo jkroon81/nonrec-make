@@ -13,7 +13,6 @@ reverse = $(strip $(if $1,$(call reverse,$(call rest,$1)) $(call first,$1)))
 trim-end = $(if $(filter %$1,$2),$(call trim-end,$1,$(patsubst %$1,%,$2)),$2)
 libs = $(call normpath,$($1-libs))
 normpath = $(patsubst $(CURDIR)/%,%,$(abspath $1))
-objs = $(addprefix $(builddir)/$1-,$($1-sources:.c=.o))
 
 o := $(call trim-end,/,$O)
 
@@ -34,30 +33,37 @@ q   = $(q_$(V))
 
 $(eval $(call add_cmd,$(strip ar    ),AR    ,$$@  ,ar))
 $(eval $(call add_cmd,$(strip ranlib),RANLIB,$$@  ,ranlib))
+$(eval $(call add_cmd,$(strip as    ),AS    ,$$@  ,as))
 $(eval $(call add_cmd,$(strip cc    ),CC    ,$$*.o,gcc))
 $(eval $(call add_cmd,$(strip ccld  ),CCLD  ,$$@  ,gcc))
 
-%.a :
-	$(q)rm -f $@
-	$(ar) cru $@ $($@-objs)
-	$(ranlib) $@
-
-%.d %.o :
-	$(cc) $($*.o-ccflags) -MMD -MP -c $($*.o-csource) -o $*.o
+define add_asmsource
+mkdirs := $$(sort $$(mkdirs) $$(builddir))
+$$(eval $$(call tvar,$1-$(2:.S=.o))-asmsource := $$(srcdir)/$2)
+$$(eval $$(call tvar,$1-$(2:.S=.o))-asflags := $$($1-asflags))
+$$(builddir)/$1-$(2:.S=.o) : Makefile $$(srcdir)/include.mk | $$(builddir)
+	$$(as) $$($$@-asflags) $$($$@-asmsource) -o $$@
+cleanfiles += $$(builddir)/$1-$(2:.S=.o)
+$$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.S=.o))
+endef
 
 define add_csource
 mkdirs := $$(sort $$(mkdirs) $$(builddir))
 $$(eval $$(call tvar,$1-$(2:.c=.o))-csource := $$(srcdir)/$2)
 $$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$($1-ccflags))
 $$(builddir)/$1-$(2:.c=.o) : Makefile $$(srcdir)/include.mk | $$(builddir)
+	$$(cc) $$($$@-ccflags) -MMD -MP -c $$($$@-csource) -o $$@
 -include $$(builddir)/$1-$(2:.c=.d)
 cleanfiles += $$(builddir)/$1-$(2:.c=.o) $$(builddir)/$1-$(2:.c=.d)
+$$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.c=.o))
 endef
 
 define add_bin
 mkdirs := $$(sort $$(mkdirs) $$(builddir))
-$$(eval $$(call tvar,$1)-objs := $$(call objs,$1))
 $$(eval $$(call tvar,$1)-libs := $$(call libs,$1))
+$$(eval $$(call tvar,$1)-objs :=)
+$$(foreach s,$$(filter %.S,$$($1-sources)),$$(eval $$(call add_asmsource,$1,$$s)))
+$$(foreach s,$$(filter %.c,$$($1-sources)),$$(eval $$(call add_csource,$1,$$s)))
 all : $$(builddir)/$1
 $$(builddir)/$1 : $$($$(call tvar,$1)-objs) \
                   $$($$(call tvar,$1)-libs) \
@@ -65,7 +71,6 @@ $$(builddir)/$1 : $$($$(call tvar,$1)-objs) \
                   $$(srcdir)/include.mk \
                   | $$(builddir)
 	$$(ccld) $$($$@-objs) $$($$@-libs) -o $$@
-$$(foreach s,$$($1-sources),$$(eval $$(call add_csource,$1,$$s)))
 cleanfiles += $$(builddir)/$1
 undefine $1-sources
 undefine $1-ccflags
@@ -74,13 +79,17 @@ endef
 
 define add_lib
 mkdirs := $$(sort $$(mkdirs) $$(builddir))
-$$(eval $$(call tvar,lib$1.a)-objs := $$(call objs,$1))
+$$(eval $$(call tvar,lib$1.a)-objs :=)
+$$(foreach s,$$(filter %.S,$$($1-sources)),$$(eval $$(call add_asmsource,lib$1.a,$$s)))
+$$(foreach s,$$(filter %.c,$$($1-sources)),$$(eval $$(call add_csource,lib$1.a,$$s)))
 all : $$(builddir)/lib$1.a
 $$(builddir)/lib$1.a : $$($$(call tvar,lib$1.a)-objs) \
                        Makefile \
                        $$(srcdir)/include.mk \
                        | $$(builddir)
-$$(foreach s,$$($1-sources),$$(eval $$(call add_csource,$1,$$s)))
+	$$(q)rm -f $$@
+	$$(ar) cru $$@ $$($$@-objs)
+	$$(ranlib) $$@
 cleanfiles += $$(builddir)/lib$1.a
 undefine $1-sources
 endef
