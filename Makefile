@@ -30,13 +30,14 @@ q_0 = @
 q_  = $(q_$(default_v))
 q   = $(q_$(V))
 
-$(eval $(call add_cmd,$(strip ar    ),AR    ,ar,$$@))
-$(eval $(call add_cmd,$(strip ranlib),RANLIB,ranlib,$$@))
-$(eval $(call add_cmd,$(strip as    ),AS    ,as,$$@))
-$(eval $(call add_cmd,$(strip cc    ),CC    ,gcc -c,$$(basename $$@).o))
-$(eval $(call add_cmd,$(strip ccas  ),CCAS  ,gcc -S,$$(basename $$@).s))
-$(eval $(call add_cmd,$(strip cpp   ),CPP   ,gcc -E,$$(basename $$@).i))
-$(eval $(call add_cmd,$(strip ccld  ),CCLD  ,gcc,$$@))
+$(eval $(call add_cmd,$(strip ar     ),AR     ,ar,$$@))
+$(eval $(call add_cmd,$(strip ranlib ),RANLIB ,ranlib,$$@))
+$(eval $(call add_cmd,$(strip as     ),AS     ,as,$$@))
+$(eval $(call add_cmd,$(strip cc     ),CC     ,gcc -c,$$(basename $$@).o))
+$(eval $(call add_cmd,$(strip ccas   ),CCAS   ,gcc -S,$$(basename $$@).s))
+$(eval $(call add_cmd,$(strip cpp    ),CPP    ,gcc -E,$$(basename $$@).i))
+$(eval $(call add_cmd,$(strip ccld   ),CCLD   ,gcc,$$@))
+$(eval $(call add_cmd,$(strip objdump),OBJDUMP,objdump -rd,$$@))
 
 define add_asm_to_obj_rule
 $$(builddir)/$1-%.o : $$(srcdir)/%.S \
@@ -69,15 +70,26 @@ $$(builddir)/$1-%.d $$(builddir)/$1-%.i : $$(srcdir)/%.c \
 	        -o $$(basename $$@).i
 endef
 
+define add_obj_to_objdump_rule
+$$(builddir)/$1-%.objdump : $$(builddir)/$1-%.o \
+                            Makefile \
+                            $$(srcdir)/include.mk
+	$$(objdump) $$< > $$@
+endef
+
 define add_asmsrc
 $$(eval $$(call tvar,$1-$(2:.S=.o))-asflags := $$(patsubst %,%,\
   $$(asflags) \
   $$($1-asflags) \
   $$($1-$2-asflags)))
-cleanfiles += $$(builddir)/$1-$(2:.S=.o)
+cleanfiles += \
+  $$(builddir)/$1-$(2:.S=.o) \
+  $$(builddir)/$1-$(2:.S=.objdump)
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.S=.o))
 $$(eval $$(call prepend-unique,$$(call objdir,$1,$2,$$(builddir)),mkdirs))
 $$(builddir)/$1-$(2:.S=.o) : | $$(call objdir,$1,$2,$$(builddir))
+$$(builddir)/$1-$(2:.S=.objdump) : | $$(call objdir,$1,$2,$$(builddir))
+objdump : $$(builddir)/$1-$(2:.S=.objdump)
 undefine $1-$2-asflags
 endef
 
@@ -91,14 +103,17 @@ cleanfiles += \
   $$(builddir)/$1-$(2:.c=.o) \
   $$(builddir)/$1-$(2:.c=.d) \
   $$(builddir)/$1-$(2:.c=.s) \
-  $$(builddir)/$1-$(2:.c=.i)
+  $$(builddir)/$1-$(2:.c=.i) \
+  $$(builddir)/$1-$(2:.c=.objdump)
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.c=.o))
 $$(eval $$(call prepend-unique,$$(call objdir,$1,$2,$$(builddir)),mkdirs))
 $$(builddir)/$1-$(2:.c=.o) : | $$(call objdir,$1,$2,$$(builddir))
 $$(builddir)/$1-$(2:.c=.s) : | $$(call objdir,$1,$2,$$(builddir))
 $$(builddir)/$1-$(2:.c=.i) : | $$(call objdir,$1,$2,$$(builddir))
+$$(builddir)/$1-$(2:.c=.objdump) : | $$(call objdir,$1,$2,$$(builddir))
 asm : $$(builddir)/$1-$(2:.c=.s)
 cpp : $$(builddir)/$1-$(2:.c=.i)
+objdump : $$(builddir)/$1-$(2:.c=.objdump)
 undefine $1-$2-ccflags
 endef
 
@@ -110,6 +125,7 @@ $$(eval $$(call add_asm_to_obj_rule,$1))
 $$(eval $$(call add_c_to_obj_rule,$1))
 $$(eval $$(call add_c_to_asm_rule,$1))
 $$(eval $$(call add_c_to_cpp_rule,$1))
+$$(eval $$(call add_obj_to_objdump_rule,$1))
 all : $$(builddir)/$1
 $$(builddir)/$1 : $$($$(call tvar,$1)-objs) \
                   $$($$(call tvar,$1)-libs) \
@@ -130,6 +146,7 @@ $$(eval $$(call add_asm_to_obj_rule,$1))
 $$(eval $$(call add_c_to_obj_rule,$1))
 $$(eval $$(call add_c_to_asm_rule,$1))
 $$(eval $$(call add_c_to_cpp_rule,$1))
+$$(eval $$(call add_obj_to_objdump_rule,$1))
 all : $$(builddir)/$1
 $$(builddir)/$1 : $$($$(call tvar,$1)-objs) \
                   Makefile \
