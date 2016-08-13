@@ -2,4 +2,5 @@ bin = test2
 test2-sources = main2.c kalle/puh.S
 test2-libs = $(builddir)/../subdir2/libfoo.a
 test2-ccflags = -I$(srcdir)/../subdir2
+test2-kalle/puh.S-asflags := -g
 subdir = subdir2

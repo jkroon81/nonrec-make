@@ -52,20 +52,22 @@ $$(builddir)/$1-%.d $$(builddir)/$1-%.o : $$(srcdir)/%.c \
 endef
 
 define add_asmsrc
-$$(eval $$(call tvar,$1-$(2:.S=.o))-asflags := $$($1-asflags))
+$$(eval $$(call tvar,$1-$(2:.S=.o))-asflags := $$($1-asflags) $$($1-$2-asflags))
 cleanfiles += $$(builddir)/$1-$(2:.S=.o)
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.S=.o))
 $$(eval $$(call prepend-unique,$$(call objdir,$1,$2,$$(builddir)),mkdirs))
 $$(builddir)/$1-$(2:.S=.o) : | $$(call objdir,$1,$2,$$(builddir))
+undefine $1-$2-asflags
 endef
 
 define add_csrc
-$$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$($1-ccflags))
+$$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$($1-ccflags) $$($1-$2-ccflags))
 $$(if $(no-deps),,$$(eval -include $$(builddir)/$1-$(2:.c=.d)))
 cleanfiles += $$(builddir)/$1-$(2:.c=.o) $$(builddir)/$1-$(2:.c=.d)
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.c=.o))
 $$(eval $$(call prepend-unique,$$(call objdir,$1,$2,$$(builddir)),mkdirs))
 $$(builddir)/$1-$(2:.c=.o) : | $$(call objdir,$1,$2,$$(builddir))
+undefine $1-$2-ccflags
 endef
 
 define add_bin
