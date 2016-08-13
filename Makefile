@@ -10,6 +10,8 @@ no-deps := $(filter clean print-%,$(MAKECMDGOALS))
 tvar = $(patsubst ./%,%,$(builddir)/$1)
 trim-end = $(if $(filter %$1,$2),$(call trim-end,$1,$(patsubst %$1,%,$2)),$2)
 normpath = $(patsubst $(CURDIR)/%,%,$(abspath $1))
+objdir = $(if $(findstring /,$2),$3/$1-$(call trim-end,/,$(dir $2)),$3)
+prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
 
 o := $(call trim-end,/,$O)
 
@@ -37,16 +39,14 @@ $(eval $(call add_cmd,$(strip ccld  ),CCLD  ,gcc,$$@))
 define add_asm_rule
 $$(builddir)/$1-%.o : $$(srcdir)/%.S \
                       Makefile \
-                      $$(srcdir)/include.mk \
-                      | $$(builddir)
+                      $$(srcdir)/include.mk
 	$$(as) $$($$@-asflags) $$< -o $$@
 endef
 
 define add_c_rule
 $$(builddir)/$1-%.d $$(builddir)/$1-%.o : $$(srcdir)/%.c \
                                           Makefile \
-                                          $$(srcdir)/include.mk \
-                                          | $$(builddir)
+                                          $$(srcdir)/include.mk
 	$$(cc) $$($$(basename $$@).o-ccflags) -MMD -MP -c $$< \
 	       -o $$(basename $$@).o
 endef
@@ -55,6 +55,8 @@ define add_asmsrc
 $$(eval $$(call tvar,$1-$(2:.S=.o))-asflags := $$($1-asflags))
 cleanfiles += $$(builddir)/$1-$(2:.S=.o)
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.S=.o))
+$$(eval $$(call prepend-unique,$$(call objdir,$1,$2,$$(builddir)),mkdirs))
+$$(builddir)/$1-$(2:.S=.o) : | $$(call objdir,$1,$2,$$(builddir))
 endef
 
 define add_csrc
@@ -62,13 +64,15 @@ $$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$($1-ccflags))
 $$(if $(no-deps),,$$(eval -include $$(builddir)/$1-$(2:.c=.d)))
 cleanfiles += $$(builddir)/$1-$(2:.c=.o) $$(builddir)/$1-$(2:.c=.d)
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.c=.o))
+$$(eval $$(call prepend-unique,$$(call objdir,$1,$2,$$(builddir)),mkdirs))
+$$(builddir)/$1-$(2:.c=.o) : | $$(call objdir,$1,$2,$$(builddir))
 endef
 
 define add_bin
 $$(eval $$(call tvar,$1)-libs := $$(call normpath,$$($1-libs)))
 $$(eval $$(call tvar,$1)-objs :=)
-$$(foreach s,$$(filter %.S,$$($1-sources)),$$(eval $$(call add_asmsrc,$1,$$s)))
-$$(foreach s,$$(filter %.c,$$($1-sources)),$$(eval $$(call add_csrc,$1,$$s)))
+$$(foreach s,$$(filter %.S,$$(sort $$($1-sources))),$$(eval $$(call add_asmsrc,$1,$$s)))
+$$(foreach s,$$(filter %.c,$$(sort $$($1-sources))),$$(eval $$(call add_csrc,$1,$$s)))
 $$(eval $$(call add_asm_rule,$1))
 $$(eval $$(call add_c_rule,$1))
 all : $$(builddir)/$1
@@ -86,8 +90,8 @@ endef
 
 define add_lib
 $$(eval $$(call tvar,$1)-objs :=)
-$$(foreach s,$$(filter %.S,$$($1-sources)),$$(eval $$(call add_asmsrc,$1,$$s)))
-$$(foreach s,$$(filter %.c,$$($1-sources)),$$(eval $$(call add_csrc,$1,$$s)))
+$$(foreach s,$$(filter %.S,$$(sort $$($1-sources))),$$(eval $$(call add_asmsrc,$1,$$s)))
+$$(foreach s,$$(filter %.c,$$(sort $$($1-sources))),$$(eval $$(call add_csrc,$1,$$s)))
 $$(eval $$(call add_asm_rule,$1))
 $$(eval $$(call add_c_rule,$1))
 all : $$(builddir)/$1
