@@ -39,12 +39,12 @@ $(eval $(call add_cmd,$(strip ccld  ),CCLD  ,gcc))
 
 define add_csource
 mkdirs := $$(sort $$(mkdirs) $$(builddir))
+$$(eval $$(call tvar,$1-$(2:.c=.o))-csource := $$(srcdir)/$2)
 $$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$($1-ccflags))
-$$(builddir)/$1-$(2:.c=.o) : $$(srcdir)/$2 \
-                             Makefile \
+$$(builddir)/$1-$(2:.c=.o) : Makefile \
                              $$(srcdir)/include.mk \
                              | $$(builddir)
-	$$(cc) $$($$@-ccflags) -MMD -MP -c $$< -o $$@
+	$$(cc) $$($$@-ccflags) -MMD -MP -c $$($$@-csource) -o $$@
 -include $$(builddir)/$1-$(2:.c=.d)
 cleanfiles += $$(builddir)/$1-$(2:.c=.o) $$(builddir)/$1-$(2:.c=.d)
 endef
@@ -115,9 +115,13 @@ clean :
 	$(if $o,$(foreach d,$(call reverse,$(mkdirs)),\
 	  [ -d $d ] && rmdir $d || true$(\n)))
 
-print-%: ; @echo $*=$($*)
+print-%: ; $(q)echo $*=$($*)
+
+print-data-base :
+	$(q)$(MAKE) -pq || true
+
 print-variables :
-	@$(foreach v,$(sort $(filter-out $(print-filter),$(.VARIABLES))),\
+	$(q)$(foreach v,$(sort $(filter-out $(print-filter),$(.VARIABLES))),\
 	  $(if $(findstring $(\n),$(value $v)),\
 	    $(info $v)$(info ---)$(info $(value $v))$(info ),\
 	    $(info $v=$(value $v))\
