@@ -8,7 +8,8 @@ no-deps := $(filter clean% print-%,$(MAKECMDGOALS))
 
 tdir = $(call trim-end,/,$(dir $(builddir)/$1))
 tvar = $(patsubst ./%,%,$(builddir)/$1)
-trim-end = $(if $(filter %$1,$2),$(call trim-end,$1,$(patsubst %$1,%,$2)),$2)
+trim-start = $(if $(filter $1%,$2),$(call trim-start,$1,$(2:$1%=%)),$2)
+trim-end   = $(if $(filter %$1,$2),$(call trim-end  ,$1,$(2:%$1=%)),$2)
 norm-path = $(patsubst $(CURDIR)/%,%,$(abspath $1))
 prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
 
@@ -20,7 +21,7 @@ define \n
 endef
 
 define add-cmd
-$1-0 = @echo "$2 $$(or $$(patsubst $o/%,%,$4),.)";
+$1-0 = @echo "$2 $$(or $$(call trim-start,/,$$(patsubst $o%,%,$4)),.)";
 $1-  = $$($1-$(default-v))
 $1   = $$($1-$(V))$3
 endef
@@ -37,8 +38,10 @@ $(eval $(call add-cmd,$(strip ccas   ),CCAS   ,gcc -S,$$(basename $$@).s))
 $(eval $(call add-cmd,$(strip cpp    ),CPP    ,gcc -E,$$(basename $$@).i))
 $(eval $(call add-cmd,$(strip ccld   ),CCLD   ,gcc,$$@))
 $(eval $(call add-cmd,$(strip objdump),OBJDUMP,objdump -rd,$$@))
-$(eval $(call add-cmd,$(strip clean  ),CLEAN  ,rm -f,$$(@:clean-%=%)))
+$(eval $(call add-cmd,$(strip clean  ),CLEAN  ,rm -f,$$(@:_clean-%=%)))
 $(eval $(call add-cmd,$(strip gen    ),GEN    ,,$$@))
+
+add-built-source = $(builddir)/$1 : | $(call tdir,$1)
 
 define add-asmsrc
 $$(eval $$(call tvar,$1-$(2:.S=.o))-asflags := $$(patsubst %,%,\
@@ -64,10 +67,6 @@ asm : $$(builddir)/$1-$(2:.c=.s)
 cpp : $$(builddir)/$1-$(2:.c=.i)
 objdump : $$(builddir)/$1-$(2:.c=.b)
 undefine $1-$2-ccflags
-endef
-
-define add-built-source
-$$(builddir)/$1 : | $$(call trim-end,/,$$(builddir)/$$(dir $1))
 endef
 
 define add-bin-lib-common
@@ -137,10 +136,10 @@ $$(eval $$(builddir)-ccflags := $$(ccflags))
 $$(foreach b,$$(bin),$$(eval $$(call add-bin,$$b)))
 $$(foreach l,$$(lib),$$(eval $$(call add-lib,$$l)))
 $$(eval $$(builddir)-cleanfiles := $$(cleanfiles))
-.PHONY : clean-$$(builddir)/
-clean : clean-$$(builddir)/
-clean-$$(builddir)/ :
-	$$(clean) $$($$(@:clean-%/=%)-cleanfiles)
+.PHONY : _clean-$$(builddir)
+clean : _clean-$$(builddir)
+_clean-$$(builddir) :
+	$$(clean) $$($$(@:_clean-%=%)-cleanfiles)
 $$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$$(if $1,$1/)$$s)))
 undefine srcdir
 undefine builddir
