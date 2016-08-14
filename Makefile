@@ -1,14 +1,13 @@
 ifndef top_srcdir
+MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory \
+             top_srcdir=$(CURDIR)
 O ?= build
 
 $(eval $(shell mkdir -p $O))
 
 $(or $(MAKECMDGOALS),_target) :
-	@$(MAKE) -C $O -f $(CURDIR)/Makefile $(MAKECMDGOALS) \
-	  top_srcdir=$(CURDIR)
+	@$(MAKE) -C $O -f $(CURDIR)/Makefile $(MAKECMDGOALS)
 else # top_srcdir
-.SUFFIXES :
-
 vpath %.c $(top_srcdir)
 vpath %.S $(top_srcdir)
 vpath Makefile $(top_srcdir)
@@ -23,11 +22,6 @@ trim-start = $(if $(filter $1%,$2),$(call trim-start,$1,$(2:$1%=%)),$2)
 trim-end   = $(if $(filter %$1,$2),$(call trim-end  ,$1,$(2:%$1=%)),$2)
 norm-path = $(call trim-start,/,$(patsubst $(CURDIR)%,%,$(abspath $1)))
 prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
-
-define \n
-
-
-endef
 
 define add-cmd
 $2-0 = @echo "$1 $$(or $4,.)";
@@ -170,14 +164,6 @@ print-%: ; $(q)echo $*=$($*)
 print-data-base :
 	$(q)$(MAKE) -f $(top_srcdir)/Makefile -pq || true
 
-print-variables :
-	$(q)$(foreach v,$(sort $(.VARIABLES)),\
-	  $(if $(findstring $(\n),$(value $v)),\
-	    $(info $v)$(info ---)$(info $(value $v))$(info ),\
-	    $(info $v=$(value $v))\
-	  )\
-	)
-
-.PHONY : all asm clean cpp print-% print-data-base print-variables
+.PHONY : all asm clean cpp print-% print-data-base
 
 endif # top_srcdir
