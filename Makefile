@@ -3,13 +3,13 @@ print-filter := $(.VARIABLES) print-filter \n
 O ?= build
 
 mkdirs :=
-default_v := 0
+default-v := 0
 no-deps := $(filter clean% print-%,$(MAKECMDGOALS))
 
 tdir = $(call trim-end,/,$(dir $(builddir)/$1))
 tvar = $(patsubst ./%,%,$(builddir)/$1)
 trim-end = $(if $(filter %$1,$2),$(call trim-end,$1,$(patsubst %$1,%,$2)),$2)
-normpath = $(patsubst $(CURDIR)/%,%,$(abspath $1))
+norm-path = $(patsubst $(CURDIR)/%,%,$(abspath $1))
 prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
 
 o := $(call trim-end,/,$O)
@@ -19,28 +19,28 @@ define \n
 
 endef
 
-define add_cmd
-$1_0 = @echo "$2 $$(or $$(patsubst $o/%,%,$4),.)";
-$1_  = $$($1_$(default_v))
-$1   = $$($1_$(V))$3
+define add-cmd
+$1-0 = @echo "$2 $$(or $$(patsubst $o/%,%,$4),.)";
+$1-  = $$($1-$(default-v))
+$1   = $$($1-$(V))$3
 endef
 
-q_0 = @
-q_  = $(q_$(default_v))
-q   = $(q_$(V))
+q-0 = @
+q-  = $(q-$(default-v))
+q   = $(q-$(V))
 
-$(eval $(call add_cmd,$(strip ar     ),AR     ,ar,$$@))
-$(eval $(call add_cmd,$(strip ranlib ),RANLIB ,ranlib,$$@))
-$(eval $(call add_cmd,$(strip as     ),AS     ,as,$$@))
-$(eval $(call add_cmd,$(strip cc     ),CC     ,gcc -c,$$(basename $$@).o))
-$(eval $(call add_cmd,$(strip ccas   ),CCAS   ,gcc -S,$$(basename $$@).s))
-$(eval $(call add_cmd,$(strip cpp    ),CPP    ,gcc -E,$$(basename $$@).i))
-$(eval $(call add_cmd,$(strip ccld   ),CCLD   ,gcc,$$@))
-$(eval $(call add_cmd,$(strip objdump),OBJDUMP,objdump -rd,$$@))
-$(eval $(call add_cmd,$(strip clean  ),CLEAN  ,rm -f,$$(@:clean-%=%)))
-$(eval $(call add_cmd,$(strip gen    ),GEN    ,,$$@))
+$(eval $(call add-cmd,$(strip ar     ),AR     ,ar,$$@))
+$(eval $(call add-cmd,$(strip ranlib ),RANLIB ,ranlib,$$@))
+$(eval $(call add-cmd,$(strip as     ),AS     ,as,$$@))
+$(eval $(call add-cmd,$(strip cc     ),CC     ,gcc -c,$$(basename $$@).o))
+$(eval $(call add-cmd,$(strip ccas   ),CCAS   ,gcc -S,$$(basename $$@).s))
+$(eval $(call add-cmd,$(strip cpp    ),CPP    ,gcc -E,$$(basename $$@).i))
+$(eval $(call add-cmd,$(strip ccld   ),CCLD   ,gcc,$$@))
+$(eval $(call add-cmd,$(strip objdump),OBJDUMP,objdump -rd,$$@))
+$(eval $(call add-cmd,$(strip clean  ),CLEAN  ,rm -f,$$(@:clean-%=%)))
+$(eval $(call add-cmd,$(strip gen    ),GEN    ,,$$@))
 
-define add_asmsrc
+define add-asmsrc
 $$(eval $$(call tvar,$1-$(2:.S=.o))-asflags := $$(patsubst %,%,\
   $$(asflags) $$($1-asflags) $$($1-$2-asflags)))
 cleanfiles += $$(builddir)/$$(basename $1-$2).[bo]
@@ -51,7 +51,7 @@ objdump : $$(builddir)/$1-$(2:.S=.b)
 undefine $1-$2-asflags
 endef
 
-define add_csrc
+define add-csrc
 $$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$(patsubst %,%,\
   $$(ccflags) $$($1-ccflags) $$($1-$2-ccflags)))
 $$(if $(no-deps),,$$(eval -include $$(builddir)/$1-$(2:.c=.d)))
@@ -66,16 +66,16 @@ objdump : $$(builddir)/$1-$(2:.c=.b)
 undefine $1-$2-ccflags
 endef
 
-define add_built_source
+define add-built-source
 $$(builddir)/$1 : | $$(call trim-end,/,$$(builddir)/$$(dir $1))
 endef
 
-define add_bin_lib_common
-$$(eval $$(call tvar,$1)-libs := $$(call normpath,$$($1-libs)))
+define add-bin-lib-common
+$$(eval $$(call tvar,$1)-libs := $$(call norm-path,$$($1-libs)))
 $$(foreach s,$$(filter %.S,$$(sort $$($1-sources))),\
-  $$(eval $$(call add_asmsrc,$1,$$s)))
+  $$(eval $$(call add-asmsrc,$1,$$s)))
 $$(foreach s,$$(filter %.c,$$(sort $$($1-sources))),\
-  $$(eval $$(call add_csrc,$1,$$s)))
+  $$(eval $$(call add-csrc,$1,$$s)))
 $$(builddir)/$1-%.o : $$(srcdir)/%.S Makefile $$(srcdir)/include.mk
 	$$(as) $$($$@-asflags) $$< -o $$@
 $$(builddir)/$1-%.o : $$(srcdir)/%.c Makefile $$(srcdir)/include.mk
@@ -103,21 +103,21 @@ undefine $1-ccflags
 undefine $1-libs
 endef
 
-define add_bin
-$$(eval $$(call add_bin_lib_common,$1))
+define add-bin
+$$(eval $$(call add-bin-lib-common,$1))
 $$(builddir)/$1 :
 	$$(ccld) $$($$@-objs) $$($$@-libs) -o $$@
 endef
 
-define add_lib
-$$(eval $$(call add_bin_lib_common,$1))
+define add-lib
+$$(eval $$(call add-bin-lib-common,$1))
 $$(builddir)/$1 :
 	$$(q)rm -f $$@
 	$$(ar) cru $$@ $$($$@-objs)
 	$$(ranlib) $$@
 endef
 
-define add_subdir
+define add-subdir
 srcdir := $$(if $1,$1,.)
 builddir := $$(if $o,$o,.)$$(if $1,/$1)
 cleanfiles :=
@@ -126,22 +126,22 @@ lib :=
 subdir :=
 built-sources :=
 mkdirs := $$(builddir) $$(mkdirs)
-asflags := $$($$(call normpath,$$(builddir)/..)-asflags)
-ccflags := $$($$(call normpath,$$(builddir)/..)-ccflags)
+asflags := $$($$(call norm-path,$$(builddir)/..)-asflags)
+ccflags := $$($$(call norm-path,$$(builddir)/..)-ccflags)
 include $$(srcdir)/include.mk
 subdir := $$(call trim-end,/,$$(subdir))
 cleanfiles += $$(addprefix $$(builddir)/,$$(built-sources))
-$$(foreach s,$$(built-sources),$$(eval $$(call add_built_source,$$s)))
+$$(foreach s,$$(built-sources),$$(eval $$(call add-built-source,$$s)))
 $$(eval $$(builddir)-asflags := $$(asflags))
 $$(eval $$(builddir)-ccflags := $$(ccflags))
-$$(foreach b,$$(bin),$$(eval $$(call add_bin,$$b)))
-$$(foreach l,$$(lib),$$(eval $$(call add_lib,$$l)))
+$$(foreach b,$$(bin),$$(eval $$(call add-bin,$$b)))
+$$(foreach l,$$(lib),$$(eval $$(call add-lib,$$l)))
 $$(eval $$(builddir)-cleanfiles := $$(cleanfiles))
 .PHONY : clean-$$(builddir)/
 clean : clean-$$(builddir)/
 clean-$$(builddir)/ :
 	$$(clean) $$($$(@:clean-%/=%)-cleanfiles)
-$$(foreach s,$$(subdir),$$(eval $$(call add_subdir,$$(if $1,$1/)$$s)))
+$$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$$(if $1,$1/)$$s)))
 undefine srcdir
 undefine builddir
 undefine cleanfiles
@@ -155,7 +155,7 @@ endef
 
 all :
 
-$(eval $(call add_subdir,))
+$(eval $(call add-subdir,))
 
 $(mkdirs) :
 	$(q)mkdir -p $@
