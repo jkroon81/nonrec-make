@@ -39,44 +39,6 @@ $(eval $(call add_cmd,$(strip ccld   ),CCLD   ,gcc,$$@))
 $(eval $(call add_cmd,$(strip objdump),OBJDUMP,objdump -rd,$$@))
 $(eval $(call add_cmd,$(strip clean  ),CLEAN  ,rm -f,$$(@:clean-%=%)))
 
-define add_asm_to_obj_rule
-$$(builddir)/$1-%.o : $$(srcdir)/%.S \
-                      Makefile \
-                      $$(srcdir)/include.mk
-	$$(as) $$($$@-asflags) $$< -o $$@
-endef
-
-define add_c_to_obj_rule
-$$(builddir)/$1-%.d $$(builddir)/$1-%.o : $$(srcdir)/%.c \
-                                          Makefile \
-                                          $$(srcdir)/include.mk
-	$$(cc) $$($$(basename $$@).o-ccflags) -MMD -MP $$< \
-	       -o $$(basename $$@).o
-endef
-
-define add_c_to_asm_rule
-$$(builddir)/$1-%.d $$(builddir)/$1-%.s : $$(srcdir)/%.c \
-                                          Makefile \
-                                          $$(srcdir)/include.mk
-	$$(ccas) $$($$(basename $$@).o-ccflags) -MMD -MP $$< \
-	         -o $$(basename $$@).s
-endef
-
-define add_c_to_cpp_rule
-$$(builddir)/$1-%.d $$(builddir)/$1-%.i : $$(srcdir)/%.c \
-                                          Makefile \
-                                          $$(srcdir)/include.mk
-	$$(cpp) $$($$(basename $$@).o-ccflags) -MMD -MP $$< \
-	        -o $$(basename $$@).i
-endef
-
-define add_obj_to_objdump_rule
-$$(builddir)/$1-%.b : $$(builddir)/$1-%.o \
-                      Makefile \
-                      $$(srcdir)/include.mk
-	$$(objdump) $$< > $$@
-endef
-
 define add_asmsrc
 $$(eval $$(call tvar,$1-$(2:.S=.o))-asflags := $$(patsubst %,%,\
   $$(asflags) $$($1-asflags) $$($1-$2-asflags)))
@@ -108,11 +70,19 @@ define add_bin_lib_common
 $$(eval $$(call tvar,$1)-libs := $$(call normpath,$$($1-libs)))
 $$(foreach s,$$(filter %.S,$$(sort $$($1-sources))),$$(eval $$(call add_asmsrc,$1,$$s)))
 $$(foreach s,$$(filter %.c,$$(sort $$($1-sources))),$$(eval $$(call add_csrc,$1,$$s)))
-$$(eval $$(call add_asm_to_obj_rule,$1))
-$$(eval $$(call add_c_to_obj_rule,$1))
-$$(eval $$(call add_c_to_asm_rule,$1))
-$$(eval $$(call add_c_to_cpp_rule,$1))
-$$(eval $$(call add_obj_to_objdump_rule,$1))
+$$(builddir)/$1-%.o : $$(srcdir)/%.S Makefile $$(srcdir)/include.mk
+	$$(as) $$($$@-asflags) $$< -o $$@
+$$(builddir)/$1-%.d $$(builddir)/$1-%.o : $$(srcdir)/%.c Makefile $$(srcdir)/include.mk
+	$$(cc) $$($$(basename $$@).o-ccflags) -MMD -MP $$< \
+	       -o $$(basename $$@).o
+$$(builddir)/$1-%.d $$(builddir)/$1-%.s : $$(srcdir)/%.c Makefile $$(srcdir)/include.mk
+	$$(ccas) $$($$(basename $$@).o-ccflags) -MMD -MP $$< \
+	         -o $$(basename $$@).s
+$$(builddir)/$1-%.d $$(builddir)/$1-%.i : $$(srcdir)/%.c Makefile $$(srcdir)/include.mk
+	$$(cpp) $$($$(basename $$@).o-ccflags) -MMD -MP $$< \
+	        -o $$(basename $$@).i
+$$(builddir)/$1-%.b : $$(builddir)/$1-%.o Makefile $$(srcdir)/include.mk
+	$$(objdump) $$< > $$@
 all : $$(builddir)/$1
 $$(builddir)/$1 : $$($$(call tvar,$1)-objs) \
                   $$($$(call tvar,$1)-libs) \
