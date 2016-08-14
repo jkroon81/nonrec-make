@@ -6,10 +6,10 @@ mkdirs :=
 default_v := 0
 no-deps := $(filter clean% print-%,$(MAKECMDGOALS))
 
+tdir = $(call trim-end,/,$(dir $(builddir)/$1))
 tvar = $(patsubst ./%,%,$(builddir)/$1)
 trim-end = $(if $(filter %$1,$2),$(call trim-end,$1,$(patsubst %$1,%,$2)),$2)
 normpath = $(patsubst $(CURDIR)/%,%,$(abspath $1))
-objdir = $(if $(findstring /,$2),/$1-$(call trim-end,/,$(dir $2)))
 prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
 
 o := $(call trim-end,/,$O)
@@ -45,9 +45,8 @@ $$(eval $$(call tvar,$1-$(2:.S=.o))-asflags := $$(patsubst %,%,\
   $$(asflags) $$($1-asflags) $$($1-$2-asflags)))
 cleanfiles += $$(builddir)/$$(basename $1-$2).[bo]
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.S=.o))
-$$(eval $$(call prepend-unique,$$(builddir)$$(call objdir,$1,$2),mkdirs))
-$$(addprefix $$(builddir)/$1-$$(basename $2),.b .o) : \
-  | $$(builddir)$$(call objdir,$1,$2)
+$$(eval $$(call prepend-unique,$$(call tdir,$1-$2),mkdirs))
+$$(addprefix $$(builddir)/$1-$$(basename $2),.b .o) : | $$(call tdir,$1-$2)
 objdump : $$(builddir)/$1-$(2:.S=.b)
 undefine $1-$2-asflags
 endef
@@ -58,9 +57,9 @@ $$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$(patsubst %,%,\
 $$(if $(no-deps),,$$(eval -include $$(builddir)/$1-$(2:.c=.d)))
 cleanfiles += $$(builddir)/$$(basename $1-$2).[bdios]
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.c=.o))
-$$(eval $$(call prepend-unique,$$(builddir)$$(call objdir,$1,$2),mkdirs))
+$$(eval $$(call prepend-unique,$$(call tdir,$1-$2),mkdirs))
 $$(addprefix $$(builddir)/$1-$$(basename $2),.b .d .i .o .s) : \
-  | $$(builddir)$$(call objdir,$1,$2)
+  | $$(call tdir,$1-$2)
 asm : $$(builddir)/$1-$(2:.c=.s)
 cpp : $$(builddir)/$1-$(2:.c=.i)
 objdump : $$(builddir)/$1-$(2:.c=.b)
