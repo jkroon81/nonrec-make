@@ -1,19 +1,28 @@
-print-filter := $(.VARIABLES) print-filter \n
-
+ifndef top_srcdir
 O ?= build
+
+$(eval $(shell mkdir -p $O))
+
+$(or $(MAKECMDGOALS),_target) :
+	@$(MAKE) -C $O -f $(CURDIR)/Makefile $(MAKECMDGOALS) \
+	  top_srcdir=$(CURDIR)
+else # top_srcdir
+.SUFFIXES :
+
+vpath %.c $(top_srcdir)
+vpath %.S $(top_srcdir)
+vpath Makefile $(top_srcdir)
 
 mkdirs :=
 default-v := 0
 no-deps := $(filter clean% print-%,$(MAKECMDGOALS))
 
-tdir = $(call trim-end,/,$(dir $(builddir)/$1))
+tdir = $(filter-out .,$(call trim-end,/,$(dir $(builddir)/$1)))
 tvar = $(patsubst ./%,%,$(builddir)/$1)
 trim-start = $(if $(filter $1%,$2),$(call trim-start,$1,$(2:$1%=%)),$2)
 trim-end   = $(if $(filter %$1,$2),$(call trim-end  ,$1,$(2:%$1=%)),$2)
-norm-path = $(patsubst $(CURDIR)/%,%,$(abspath $1))
+norm-path = $(call trim-start,/,$(patsubst $(CURDIR)%,%,$(abspath $1)))
 prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
-
-o := $(call trim-end,/,$O)
 
 define \n
 
@@ -21,7 +30,7 @@ define \n
 endef
 
 define add-cmd
-$2-0 = @echo "$1 $$(or $$(call trim-start,/,$$(patsubst $o%,%,$4)),.)";
+$2-0 = @echo "$1 $$(or $4,.)";
 $2-  = $$($2-$(default-v))
 $2   = $$($2-$(V))$3
 endef
@@ -41,31 +50,44 @@ $(eval $(call add-cmd,OBJDUMP,objdump,objdump -rd,$$@))
 $(eval $(call add-cmd,CLEAN  ,clean,rm -f,$$(@:_clean-%=%)))
 $(eval $(call add-cmd,GEN    ,gen,,$$@))
 
+%.o : %.S Makefile
+	$(as) $($@-asflags) $< -o $@
+%.o : %.c Makefile
+	$(cc) $($@-ccflags) -MMD -MP $< -o $@
+%.s : %.c Makefile
+	$(ccas) $($(@:.s=.o)-ccflags) -MMD -MP $< -o $@
+%.i : %.c Makefile
+	$(cpp) $($(@:.i=.o)-ccflags) -MMD -MP $< -o $@
+%.b : %.o Makefile
+	$(objdump) $< > $@
+
 add-built-source = $(builddir)/$1 : | $(call tdir,$1)
 
 define add-asmsrc
-$(eval $(call tvar,$1-$(2:.S=.o))-asflags := $(patsubst %,%,\
-  $(asflags) $($1-asflags) $($1-$2-asflags)))
-cleanfiles += $(builddir)/$(basename $1-$2).[bo]
-$(eval $(call tvar,$1)-objs += $(builddir)/$1-$(2:.S=.o))
-$(eval $(call prepend-unique,$(call tdir,$1-$2),mkdirs))
-$(addprefix $(builddir)/$1-$(basename $2),.b .o) : | $(call tdir,$1-$2)
-objdump : $(builddir)/$1-$(2:.S=.b)
-undefine $1-$2-asflags
+$(eval $(call tvar,$(2:.S=.o))-asflags := $(patsubst %,%,\
+  $(asflags) $($1-asflags) $($2-asflags)))
+cleanfiles += $(builddir)/$(basename $2).[bo]
+$(eval $(call tvar,$1)-objs += $(call tvar,$(2:.S=.o)))
+$(eval $(call prepend-unique,$(call tdir,$2),mkdirs))
+$(addprefix $(builddir)/$(basename $2),.b .o) : \
+  $(srcdir)/include.mk | $(call tdir,$2)
+objdump : $(builddir)/$(2:.S=.b)
+undefine $2-asflags
 endef
 
 define add-csrc
-$(eval $(call tvar,$1-$(2:.c=.o))-ccflags := $(patsubst %,%,\
-  $(ccflags) $($1-ccflags) $($1-$2-ccflags)))
-$(if $(no-deps),,$(eval -include $(builddir)/$1-$(2:.c=.d)))
-cleanfiles += $(builddir)/$(basename $1-$2).[bdios]
-$(eval $(call tvar,$1)-objs += $(builddir)/$1-$(2:.c=.o))
-$(eval $(call prepend-unique,$(call tdir,$1-$2),mkdirs))
-$(addprefix $(builddir)/$1-$(basename $2),.b .d .i .o .s) : | $(call tdir,$1-$2)
-asm : $(builddir)/$1-$(2:.c=.s)
-cpp : $(builddir)/$1-$(2:.c=.i)
-objdump : $(builddir)/$1-$(2:.c=.b)
-undefine $1-$2-ccflags
+$(eval $(call tvar,$(2:.c=.o))-ccflags := $(patsubst %,%,\
+  $(ccflags) $($1-ccflags) $($2-ccflags)))
+$(if $(no-deps),,$(eval -include $(builddir)/$(2:.c=.d)))
+cleanfiles += $(builddir)/$(basename $2).[bdios]
+$(eval $(call tvar,$1)-objs += $(call tvar,$(2:.c=.o)))
+$(eval $(call prepend-unique,$(call tdir,$2),mkdirs))
+$(addprefix $(builddir)/$(basename $2),.b .d .i .o .s) : \
+  $(srcdir)/include.mk | $(call tdir,$2)
+asm : $(builddir)/$(2:.c=.s)
+cpp : $(builddir)/$(2:.c=.i)
+objdump : $(builddir)/$(2:.c=.b)
+undefine $2-ccflags
 endef
 
 define add-bin-lib-common
@@ -74,24 +96,6 @@ $(foreach s,$(filter %.S,$(sort $($1-sources))),\
   $(eval $(call add-asmsrc,$1,$s)))
 $(foreach s,$(filter %.c,$(sort $($1-sources))),\
   $(eval $(call add-csrc,$1,$s)))
-$(builddir)/$1-%.o : $(srcdir)/%.S Makefile $(srcdir)/include.mk
-	$$(as) $$($$@-asflags) $$< -o $$@
-$(builddir)/$1-%.o : $(srcdir)/%.c Makefile $(srcdir)/include.mk
-	$$(cc) $$($$@-ccflags) -MMD -MP $$< -o $$@
-$(builddir)/$1-%.s : $(srcdir)/%.c Makefile $(srcdir)/include.mk
-	$$(ccas) $$($$(@:.s=.o)-ccflags) -MMD -MP $$< -o $$@
-$(builddir)/$1-%.i : $(srcdir)/%.c Makefile $(srcdir)/include.mk
-	$$(cpp) $$($$(@:.i=.o)-ccflags) -MMD -MP $$< -o $$@
-$(builddir)/$1-%.b : $(builddir)/$1-%.o Makefile $(srcdir)/include.mk
-	$$(objdump) $$< > $$@
-$(builddir)/$1-%.o : $(builddir)/$1-%.S Makefile $(srcdir)/include.mk
-	$$(as) $$($$@-asflags) $$< -o $$@
-$(builddir)/$1-%.o : $(builddir)/$1-%.c Makefile $(srcdir)/include.mk
-	$$(cc) $$($$@-ccflags) -MMD -MP $$< -o $$@
-$(builddir)/$1-%.s : $(builddir)/$1-%.c Makefile $(srcdir)/include.mk
-	$$(ccas) $$($$(@:.s=.o)-ccflags) -MMD -MP $$< -o $$@
-$(builddir)/$1-%.i : $(builddir)/$1-%.c Makefile $(srcdir)/include.mk
-	$$(cpp) $$($$(@:.i=.o)-ccflags) -MMD -MP $$< -o $$@
 all : $(builddir)/$1
 $(builddir)/$1 : $($(call tvar,$1)-objs) $($(call tvar,$1)-libs) \
                  Makefile $(srcdir)/include.mk | $(builddir)
@@ -116,16 +120,16 @@ $(builddir)/$1 :
 endef
 
 define add-subdir
-srcdir := $(if $1,$1,.)
-builddir := $(if $o,$o,.)$(if $1,/$1)
+srcdir := $(top_srcdir)$(if $1,/$1)
+builddir := $(if $1,$1,.)
 cleanfiles :=
 bin :=
 lib :=
 subdir :=
 built-sources :=
-mkdirs := $$(builddir) $(mkdirs)
-asflags := $$($$(call norm-path,$$(builddir)/..)-asflags)
-ccflags := $$($$(call norm-path,$$(builddir)/..)-ccflags)
+$(if $1,$$(eval mkdirs := $1 $(mkdirs)))
+asflags := $$($$(or $$(call norm-path,$$(builddir)/..),.)-asflags)
+ccflags := $$($$(or $$(call norm-path,$$(builddir)/..),.)-ccflags)
 include $$(srcdir)/include.mk
 subdir := $$(call trim-end,/,$$(subdir))
 cleanfiles += $$(addprefix $$(builddir)/,$$(built-sources))
@@ -164,10 +168,10 @@ clean :
 print-%: ; $(q)echo $*=$($*)
 
 print-data-base :
-	$(q)$(MAKE) -pq || true
+	$(q)$(MAKE) -f $(top_srcdir)/Makefile -pq || true
 
 print-variables :
-	$(q)$(foreach v,$(sort $(filter-out $(print-filter),$(.VARIABLES))),\
+	$(q)$(foreach v,$(sort $(.VARIABLES)),\
 	  $(if $(findstring $(\n),$(value $v)),\
 	    $(info $v)$(info ---)$(info $(value $v))$(info ),\
 	    $(info $v=$(value $v))\
@@ -175,3 +179,5 @@ print-variables :
 	)
 
 .PHONY : all asm clean cpp print-% print-data-base print-variables
+
+endif # top_srcdir
