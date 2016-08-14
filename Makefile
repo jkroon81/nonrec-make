@@ -2,10 +2,9 @@ print-filter := $(.VARIABLES) print-filter \n
 
 O ?= build
 
-cleanfiles :=
 mkdirs :=
 default_v := 0
-no-deps := $(filter clean print-%,$(MAKECMDGOALS))
+no-deps := $(filter clean% print-%,$(MAKECMDGOALS))
 
 tvar = $(patsubst ./%,%,$(builddir)/$1)
 trim-end = $(if $(filter %$1,$2),$(call trim-end,$1,$(patsubst %$1,%,$2)),$2)
@@ -21,7 +20,7 @@ define \n
 endef
 
 define add_cmd
-$1_0 = @echo "$2 $$(patsubst $o/%,%,$4)";
+$1_0 = @echo "$2 $$(or $$(patsubst $o/%,%,$4),.)";
 $1_  = $$($1_$(default_v))
 $1   = $$($1_$(V))$3
 endef
@@ -38,6 +37,7 @@ $(eval $(call add_cmd,$(strip ccas   ),CCAS   ,gcc -S,$$(basename $$@).s))
 $(eval $(call add_cmd,$(strip cpp    ),CPP    ,gcc -E,$$(basename $$@).i))
 $(eval $(call add_cmd,$(strip ccld   ),CCLD   ,gcc,$$@))
 $(eval $(call add_cmd,$(strip objdump),OBJDUMP,objdump -rd,$$@))
+$(eval $(call add_cmd,$(strip clean  ),CLEAN  ,rm -f,$$(@:clean-%=%)))
 
 define add_asm_to_obj_rule
 $$(builddir)/$1-%.o : $$(srcdir)/%.S \
@@ -162,6 +162,7 @@ endef
 define add_subdir
 srcdir := $$(if $1,$1,.)
 builddir := $$(if $o,$o,.)$$(if $1,/$1)
+cleanfiles :=
 bin :=
 lib :=
 subdir :=
@@ -174,9 +175,15 @@ $$(eval $$(builddir)-asflags := $$(asflags))
 $$(eval $$(builddir)-ccflags := $$(ccflags))
 $$(foreach b,$$(bin),$$(eval $$(call add_bin,$$b)))
 $$(foreach l,$$(lib),$$(eval $$(call add_lib,$$l)))
+$$(eval $$(builddir)-cleanfiles := $$(cleanfiles))
+.PHONY : clean-$$(builddir)/
+clean : clean-$$(builddir)/
+clean-$$(builddir)/ :
+	$$(clean) $$($$(@:clean-%/=%)-cleanfiles)
 $$(foreach s,$$(subdir),$$(eval $$(call add_subdir,$$(if $1,$1/)$$s)))
 undefine srcdir
 undefine builddir
+undefine cleanfiles
 undefine bin
 undefine lib
 undefine subdir
@@ -188,14 +195,11 @@ all :
 
 $(eval $(call add_subdir,))
 
-cleanfiles := $(strip $(cleanfiles))
-
 $(mkdirs) :
 	$(q)mkdir -p $@
 
 clean :
-	rm -f $(cleanfiles)
-	$(if $o,$(foreach d,$(mkdirs),[ -d $d ] && rmdir $d || true$(\n)))
+	$(q)for d in $(mkdirs); do [ -d $$d ] && rmdir $$d || true; done
 
 print-%: ; $(q)echo $*=$($*)
 
