@@ -68,27 +68,29 @@ endef
 
 define add_bin_lib_common
 $$(eval $$(call tvar,$1)-libs := $$(call normpath,$$($1-libs)))
-$$(foreach s,$$(filter %.S,$$(sort $$($1-sources))),$$(eval $$(call add_asmsrc,$1,$$s)))
-$$(foreach s,$$(filter %.c,$$(sort $$($1-sources))),$$(eval $$(call add_csrc,$1,$$s)))
+$$(foreach s,$$(filter %.S,$$(sort $$($1-sources))),\
+  $$(eval $$(call add_asmsrc,$1,$$s)))
+$$(foreach s,$$(filter %.c,$$(sort $$($1-sources))),\
+  $$(eval $$(call add_csrc,$1,$$s)))
 $$(builddir)/$1-%.o : $$(srcdir)/%.S Makefile $$(srcdir)/include.mk
 	$$(as) $$($$@-asflags) $$< -o $$@
-$$(builddir)/$1-%.d $$(builddir)/$1-%.o : $$(srcdir)/%.c Makefile $$(srcdir)/include.mk
+$$(builddir)/$1-%.d $$(builddir)/$1-%.o : $$(srcdir)/%.c Makefile \
+                                          $$(srcdir)/include.mk
 	$$(cc) $$($$(basename $$@).o-ccflags) -MMD -MP $$< \
 	       -o $$(basename $$@).o
-$$(builddir)/$1-%.d $$(builddir)/$1-%.s : $$(srcdir)/%.c Makefile $$(srcdir)/include.mk
+$$(builddir)/$1-%.d $$(builddir)/$1-%.s : $$(srcdir)/%.c Makefile \
+                                          $$(srcdir)/include.mk
 	$$(ccas) $$($$(basename $$@).o-ccflags) -MMD -MP $$< \
 	         -o $$(basename $$@).s
-$$(builddir)/$1-%.d $$(builddir)/$1-%.i : $$(srcdir)/%.c Makefile $$(srcdir)/include.mk
+$$(builddir)/$1-%.d $$(builddir)/$1-%.i : $$(srcdir)/%.c Makefile \
+                                          $$(srcdir)/include.mk
 	$$(cpp) $$($$(basename $$@).o-ccflags) -MMD -MP $$< \
 	        -o $$(basename $$@).i
 $$(builddir)/$1-%.b : $$(builddir)/$1-%.o Makefile $$(srcdir)/include.mk
 	$$(objdump) $$< > $$@
 all : $$(builddir)/$1
-$$(builddir)/$1 : $$($$(call tvar,$1)-objs) \
-                  $$($$(call tvar,$1)-libs) \
-                  Makefile \
-                  $$(srcdir)/include.mk \
-                  | $$(builddir)
+$$(builddir)/$1 : $$($$(call tvar,$1)-objs) $$($$(call tvar,$1)-libs) \
+                  Makefile $$(srcdir)/include.mk | $$(builddir)
 cleanfiles += $$(builddir)/$1
 undefine $1-sources
 undefine $1-ccflags
