@@ -81,9 +81,9 @@ $$(builddir)/$1-%.o : $$(srcdir)/%.S Makefile $$(srcdir)/include.mk
 $$(builddir)/$1-%.o : $$(srcdir)/%.c Makefile $$(srcdir)/include.mk
 	$$(cc) $$($$@-ccflags) -MMD -MP $$< -o $$@
 $$(builddir)/$1-%.s : $$(srcdir)/%.c Makefile $$(srcdir)/include.mk
-	$$(ccas) $$($$@-ccflags) -MMD -MP $$< -o $$@
+	$$(ccas) $$($$(@:.s=.o)-ccflags) -MMD -MP $$< -o $$@
 $$(builddir)/$1-%.i : $$(srcdir)/%.c Makefile $$(srcdir)/include.mk
-	$$(cpp) $$($$@-ccflags) -MMD -MP $$< -o $$@
+	$$(cpp) $$($$(@:.i=.o)-ccflags) -MMD -MP $$< -o $$@
 $$(builddir)/$1-%.b : $$(builddir)/$1-%.o Makefile $$(srcdir)/include.mk
 	$$(objdump) $$< > $$@
 $$(builddir)/$1-%.o : $$(builddir)/$1-%.S Makefile $$(srcdir)/include.mk
@@ -91,9 +91,9 @@ $$(builddir)/$1-%.o : $$(builddir)/$1-%.S Makefile $$(srcdir)/include.mk
 $$(builddir)/$1-%.o : $$(builddir)/$1-%.c Makefile $$(srcdir)/include.mk
 	$$(cc) $$($$@-ccflags) -MMD -MP $$< -o $$@
 $$(builddir)/$1-%.s : $$(builddir)/$1-%.c Makefile $$(srcdir)/include.mk
-	$$(ccas) $$($$@-ccflags) -MMD -MP $$< -o $$@
+	$$(ccas) $$($$(@:.s=.o)-ccflags) -MMD -MP $$< -o $$@
 $$(builddir)/$1-%.i : $$(builddir)/$1-%.c Makefile $$(srcdir)/include.mk
-	$$(cpp) $$($$@-ccflags) -MMD -MP $$< -o $$@
+	$$(cpp) $$($$(@:.i=.o)-ccflags) -MMD -MP $$< -o $$@
 all : $$(builddir)/$1
 $$(builddir)/$1 : $$($$(call tvar,$1)-objs) $$($$(call tvar,$1)-libs) \
                   Makefile $$(srcdir)/include.mk | $$(builddir)
