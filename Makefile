@@ -38,6 +38,7 @@ $(eval $(call add_cmd,$(strip cpp    ),CPP    ,gcc -E,$$(basename $$@).i))
 $(eval $(call add_cmd,$(strip ccld   ),CCLD   ,gcc,$$@))
 $(eval $(call add_cmd,$(strip objdump),OBJDUMP,objdump -rd,$$@))
 $(eval $(call add_cmd,$(strip clean  ),CLEAN  ,rm -f,$$(@:clean-%=%)))
+$(eval $(call add_cmd,$(strip gen    ),GEN    ,,$$@))
 
 define add_asmsrc
 $$(eval $$(call tvar,$1-$(2:.S=.o))-asflags := $$(patsubst %,%,\
@@ -66,6 +67,10 @@ objdump : $$(builddir)/$1-$(2:.c=.b)
 undefine $1-$2-ccflags
 endef
 
+define add_built_source
+$$(builddir)/$1 : | $$(call trim-end,/,$$(builddir)/$$(dir $1))
+endef
+
 define add_bin_lib_common
 $$(eval $$(call tvar,$1)-libs := $$(call normpath,$$($1-libs)))
 $$(foreach s,$$(filter %.S,$$(sort $$($1-sources))),\
@@ -74,20 +79,22 @@ $$(foreach s,$$(filter %.c,$$(sort $$($1-sources))),\
   $$(eval $$(call add_csrc,$1,$$s)))
 $$(builddir)/$1-%.o : $$(srcdir)/%.S Makefile $$(srcdir)/include.mk
 	$$(as) $$($$@-asflags) $$< -o $$@
-$$(builddir)/$1-%.d $$(builddir)/$1-%.o : $$(srcdir)/%.c Makefile \
-                                          $$(srcdir)/include.mk
-	$$(cc) $$($$(basename $$@).o-ccflags) -MMD -MP $$< \
-	       -o $$(basename $$@).o
-$$(builddir)/$1-%.d $$(builddir)/$1-%.s : $$(srcdir)/%.c Makefile \
-                                          $$(srcdir)/include.mk
-	$$(ccas) $$($$(basename $$@).o-ccflags) -MMD -MP $$< \
-	         -o $$(basename $$@).s
-$$(builddir)/$1-%.d $$(builddir)/$1-%.i : $$(srcdir)/%.c Makefile \
-                                          $$(srcdir)/include.mk
-	$$(cpp) $$($$(basename $$@).o-ccflags) -MMD -MP $$< \
-	        -o $$(basename $$@).i
+$$(builddir)/$1-%.o : $$(srcdir)/%.c Makefile $$(srcdir)/include.mk
+	$$(cc) $$($$@-ccflags) -MMD -MP $$< -o $$@
+$$(builddir)/$1-%.s : $$(srcdir)/%.c Makefile $$(srcdir)/include.mk
+	$$(ccas) $$($$@-ccflags) -MMD -MP $$< -o $$@
+$$(builddir)/$1-%.i : $$(srcdir)/%.c Makefile $$(srcdir)/include.mk
+	$$(cpp) $$($$@-ccflags) -MMD -MP $$< -o $$@
 $$(builddir)/$1-%.b : $$(builddir)/$1-%.o Makefile $$(srcdir)/include.mk
 	$$(objdump) $$< > $$@
+$$(builddir)/$1-%.o : $$(builddir)/$1-%.S Makefile $$(srcdir)/include.mk
+	$$(as) $$($$@-asflags) $$< -o $$@
+$$(builddir)/$1-%.o : $$(builddir)/$1-%.c Makefile $$(srcdir)/include.mk
+	$$(cc) $$($$@-ccflags) -MMD -MP $$< -o $$@
+$$(builddir)/$1-%.s : $$(builddir)/$1-%.c Makefile $$(srcdir)/include.mk
+	$$(ccas) $$($$@-ccflags) -MMD -MP $$< -o $$@
+$$(builddir)/$1-%.i : $$(builddir)/$1-%.c Makefile $$(srcdir)/include.mk
+	$$(cpp) $$($$@-ccflags) -MMD -MP $$< -o $$@
 all : $$(builddir)/$1
 $$(builddir)/$1 : $$($$(call tvar,$1)-objs) $$($$(call tvar,$1)-libs) \
                   Makefile $$(srcdir)/include.mk | $$(builddir)
@@ -118,11 +125,14 @@ cleanfiles :=
 bin :=
 lib :=
 subdir :=
+built-sources :=
 mkdirs := $$(builddir) $$(mkdirs)
 asflags := $$($$(call normpath,$$(builddir)/..)-asflags)
 ccflags := $$($$(call normpath,$$(builddir)/..)-ccflags)
 include $$(srcdir)/include.mk
 subdir := $$(call trim-end,/,$$(subdir))
+cleanfiles += $$(addprefix $$(builddir)/,$$(built-sources))
+$$(foreach s,$$(built-sources),$$(eval $$(call add_built_source,$$s)))
 $$(eval $$(builddir)-asflags := $$(asflags))
 $$(eval $$(builddir)-ccflags := $$(ccflags))
 $$(foreach b,$$(bin),$$(eval $$(call add_bin,$$b)))
@@ -139,6 +149,7 @@ undefine cleanfiles
 undefine bin
 undefine lib
 undefine subdir
+undefine built-sources
 undefine asflags
 undefine ccflags
 endef
