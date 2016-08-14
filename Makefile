@@ -71,9 +71,9 @@ $$(builddir)/$1-%.d $$(builddir)/$1-%.i : $$(srcdir)/%.c \
 endef
 
 define add_obj_to_objdump_rule
-$$(builddir)/$1-%.objdump : $$(builddir)/$1-%.o \
-                            Makefile \
-                            $$(srcdir)/include.mk
+$$(builddir)/$1-%.b : $$(builddir)/$1-%.o \
+                      Makefile \
+                      $$(srcdir)/include.mk
 	$$(objdump) $$< > $$@
 endef
 
@@ -82,14 +82,12 @@ $$(eval $$(call tvar,$1-$(2:.S=.o))-asflags := $$(patsubst %,%,\
   $$(asflags) \
   $$($1-asflags) \
   $$($1-$2-asflags)))
-cleanfiles += \
-  $$(builddir)/$1-$(2:.S=.o) \
-  $$(builddir)/$1-$(2:.S=.objdump)
+cleanfiles += $$(builddir)/$$(basename $1-$2).[bo]
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.S=.o))
 $$(eval $$(call prepend-unique,$$(call objdir,$1,$2,$$(builddir)),mkdirs))
+$$(builddir)/$1-$(2:.S=.b) : | $$(call objdir,$1,$2,$$(builddir))
 $$(builddir)/$1-$(2:.S=.o) : | $$(call objdir,$1,$2,$$(builddir))
-$$(builddir)/$1-$(2:.S=.objdump) : | $$(call objdir,$1,$2,$$(builddir))
-objdump : $$(builddir)/$1-$(2:.S=.objdump)
+objdump : $$(builddir)/$1-$(2:.S=.b)
 undefine $1-$2-asflags
 endef
 
@@ -99,21 +97,17 @@ $$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$(patsubst %,%,\
   $$($1-ccflags) \
   $$($1-$2-ccflags)))
 $$(if $(no-deps),,$$(eval -include $$(builddir)/$1-$(2:.c=.d)))
-cleanfiles += \
-  $$(builddir)/$1-$(2:.c=.o) \
-  $$(builddir)/$1-$(2:.c=.d) \
-  $$(builddir)/$1-$(2:.c=.s) \
-  $$(builddir)/$1-$(2:.c=.i) \
-  $$(builddir)/$1-$(2:.c=.objdump)
+cleanfiles += $$(builddir)/$$(basename $1-$2).[bdios]
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.c=.o))
 $$(eval $$(call prepend-unique,$$(call objdir,$1,$2,$$(builddir)),mkdirs))
+$$(builddir)/$1-$(2:.c=.b) : | $$(call objdir,$1,$2,$$(builddir))
+$$(builddir)/$1-$(2:.c=.d) : | $$(call objdir,$1,$2,$$(builddir))
+$$(builddir)/$1-$(2:.c=.i) : | $$(call objdir,$1,$2,$$(builddir))
 $$(builddir)/$1-$(2:.c=.o) : | $$(call objdir,$1,$2,$$(builddir))
 $$(builddir)/$1-$(2:.c=.s) : | $$(call objdir,$1,$2,$$(builddir))
-$$(builddir)/$1-$(2:.c=.i) : | $$(call objdir,$1,$2,$$(builddir))
-$$(builddir)/$1-$(2:.c=.objdump) : | $$(call objdir,$1,$2,$$(builddir))
 asm : $$(builddir)/$1-$(2:.c=.s)
 cpp : $$(builddir)/$1-$(2:.c=.i)
-objdump : $$(builddir)/$1-$(2:.c=.objdump)
+objdump : $$(builddir)/$1-$(2:.c=.b)
 undefine $1-$2-ccflags
 endef
 
