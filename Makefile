@@ -79,9 +79,7 @@ endef
 
 define add_asmsrc
 $$(eval $$(call tvar,$1-$(2:.S=.o))-asflags := $$(patsubst %,%,\
-  $$(asflags) \
-  $$($1-asflags) \
-  $$($1-$2-asflags)))
+  $$(asflags) $$($1-asflags) $$($1-$2-asflags)))
 cleanfiles += $$(builddir)/$$(basename $1-$2).[bo]
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.S=.o))
 $$(eval $$(call prepend-unique,$$(builddir)$$(call objdir,$1,$2),mkdirs))
@@ -93,9 +91,7 @@ endef
 
 define add_csrc
 $$(eval $$(call tvar,$1-$(2:.c=.o))-ccflags := $$(patsubst %,%,\
-  $$(ccflags) \
-  $$($1-ccflags) \
-  $$($1-$2-ccflags)))
+  $$(ccflags) $$($1-ccflags) $$($1-$2-ccflags)))
 $$(if $(no-deps),,$$(eval -include $$(builddir)/$1-$(2:.c=.d)))
 cleanfiles += $$(builddir)/$$(basename $1-$2).[bdios]
 $$(eval $$(call tvar,$1)-objs += $$(builddir)/$1-$(2:.c=.o))
@@ -108,7 +104,7 @@ objdump : $$(builddir)/$1-$(2:.c=.b)
 undefine $1-$2-ccflags
 endef
 
-define add_bin
+define add_bin_lib_common
 $$(eval $$(call tvar,$1)-libs := $$(call normpath,$$($1-libs)))
 $$(foreach s,$$(filter %.S,$$(sort $$($1-sources))),$$(eval $$(call add_asmsrc,$1,$$s)))
 $$(foreach s,$$(filter %.c,$$(sort $$($1-sources))),$$(eval $$(call add_csrc,$1,$$s)))
@@ -123,31 +119,24 @@ $$(builddir)/$1 : $$($$(call tvar,$1)-objs) \
                   Makefile \
                   $$(srcdir)/include.mk \
                   | $$(builddir)
-	$$(ccld) $$($$@-objs) $$($$@-libs) -o $$@
 cleanfiles += $$(builddir)/$1
 undefine $1-sources
 undefine $1-ccflags
 undefine $1-libs
 endef
 
+define add_bin
+$$(eval $$(call add_bin_lib_common,$1))
+$$(builddir)/$1 :
+	$$(ccld) $$($$@-objs) $$($$@-libs) -o $$@
+endef
+
 define add_lib
-$$(foreach s,$$(filter %.S,$$(sort $$($1-sources))),$$(eval $$(call add_asmsrc,$1,$$s)))
-$$(foreach s,$$(filter %.c,$$(sort $$($1-sources))),$$(eval $$(call add_csrc,$1,$$s)))
-$$(eval $$(call add_asm_to_obj_rule,$1))
-$$(eval $$(call add_c_to_obj_rule,$1))
-$$(eval $$(call add_c_to_asm_rule,$1))
-$$(eval $$(call add_c_to_cpp_rule,$1))
-$$(eval $$(call add_obj_to_objdump_rule,$1))
-all : $$(builddir)/$1
-$$(builddir)/$1 : $$($$(call tvar,$1)-objs) \
-                  Makefile \
-                  $$(srcdir)/include.mk \
-                  | $$(builddir)
+$$(eval $$(call add_bin_lib_common,$1))
+$$(builddir)/$1 :
 	$$(q)rm -f $$@
 	$$(ar) cru $$@ $$($$@-objs)
 	$$(ranlib) $$@
-cleanfiles += $$(builddir)/$1
-undefine $1-sources
 endef
 
 define add_subdir
