@@ -1,13 +1,26 @@
-ifndef top_srcdir
-MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory \
-             top_srcdir=$(CURDIR)
+top_srcdir := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
+
+ifeq ($(abspath $(CURDIR)),$(top_srcdir))
 O ?= build
+else
+O ?= .
+endif
 
-$(eval $(shell mkdir -p $O))
+o := $(if $O,$O,.)
 
+sub-make := $(if $(filter $(abspath $(CURDIR)),$(top_srcdir)),1,0)
+sub-make += $(if $(filter .,$o),1,0)
+
+ifeq ($(sub-make),1 1)
+$(error srcdir = builddir not supported)
+endif
+
+ifneq ($(sub-make),0 1)
+$(eval $(shell mkdir -p $o))
 $(or $(MAKECMDGOALS),_target) :
-	@$(MAKE) -C $O -f $(CURDIR)/Makefile $(MAKECMDGOALS)
-else # top_srcdir
+	@$(MAKE) -C $o -f $(top_srcdir)/Makefile $(MAKECMDGOALS) O=.
+else
 vpath %.c $(top_srcdir)
 vpath %.S $(top_srcdir)
 vpath Makefile $(top_srcdir)
@@ -166,4 +179,4 @@ print-data-base :
 
 .PHONY : all asm clean cpp print-% print-data-base
 
-endif # top_srcdir
+endif
