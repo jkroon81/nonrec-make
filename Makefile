@@ -1,29 +1,17 @@
-top_srcdir := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+top-srcdir := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
-
-ifeq ($(abspath $(CURDIR)),$(top_srcdir))
-O ?= build
-else
 O ?= .
-endif
+override O := $(if $O,$O,.)
 
-o := $(if $O,$O,.)
-
-sub-make := $(if $(filter $(abspath $(CURDIR)),$(top_srcdir)),1,0)
-sub-make += $(if $(filter .,$o),1,0)
-
-ifeq ($(sub-make),1 1)
-$(error srcdir = builddir not supported)
-endif
-
-ifneq ($(sub-make),0 1)
-$(eval $(shell mkdir -p $o))
+ifndef $(top-srcdir)-sub-make
+$(eval $(shell mkdir -p $O))
 $(or $(MAKECMDGOALS),_target) :
-	@$(MAKE) -C $o -f $(top_srcdir)/Makefile $(MAKECMDGOALS) O=.
+	@$(MAKE) -C $O -f $(top-srcdir)/Makefile $(MAKECMDGOALS) O=. \
+	  $(top-srcdir)-sub-make=1
 else
-vpath %.c $(top_srcdir)
-vpath %.S $(top_srcdir)
-vpath Makefile $(top_srcdir)
+vpath %.c $(top-srcdir)
+vpath %.S $(top-srcdir)
+vpath Makefile $(top-srcdir)
 
 mkdirs :=
 default-v := 0
@@ -127,7 +115,7 @@ $(builddir)/$1 :
 endef
 
 define add-subdir
-srcdir := $(top_srcdir)$(if $1,/$1)
+srcdir := $(top-srcdir)$(if $1,/$1)
 builddir := $(if $1,$1,.)
 cleanfiles :=
 bin :=
@@ -169,13 +157,18 @@ $(eval $(call add-subdir,))
 $(mkdirs) :
 	$(q)mkdir -p $@
 
+clean : $(top-srcdir)-rmdir-flags := --ignore-fail-on-non-empty
 clean :
-	$(q)for d in $(mkdirs); do [ -d $$d ] && rmdir $$d || true; done
+	$(q)for d in $(mkdirs); do \
+	    if [ -d $$d ]; then \
+	        rmdir $($(CURDIR)-rmdir-flags) $$d; \
+	    fi \
+	done
 
 print-%: ; $(q)echo $*=$($*)
 
 print-data-base :
-	$(q)$(MAKE) -f $(top_srcdir)/Makefile -pq || true
+	$(q)$(MAKE) -f $(top-srcdir)/Makefile -pq || true
 
 .PHONY : all asm clean cpp print-% print-data-base
 
