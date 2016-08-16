@@ -1,13 +1,10 @@
 top-srcdir := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
-O ?= .
-override O := $(if $O,$O,.)
 
-ifndef $(top-srcdir)-sub-make
+ifdef O
 $(eval $(shell mkdir -p $O))
 $(or $(MAKECMDGOALS),_target) :
-	@$(MAKE) -C $O -f $(top-srcdir)/Makefile $(MAKECMDGOALS) O=. \
-	  $(top-srcdir)-sub-make=1
+	@$(MAKE) -C $O -f $(top-srcdir)/Makefile $(MAKECMDGOALS) O=
 else
 vpath %.c $(top-srcdir)
 vpath %.S $(top-srcdir)
@@ -61,7 +58,7 @@ add-built-source = $(builddir)/$1 : | $(call tdir,$1)
 define add-asmsrc
 $(eval $(call tvar,$(2:.S=.o))-asflags := $(patsubst %,%,\
   $(asflags) $($1-asflags) $($2-asflags)))
-cleanfiles += $(builddir)/$(basename $2).[bo]
+cleanfiles += $(call tvar,$(basename $2).[bo])
 $(eval $(call tvar,$1)-objs += $(call tvar,$(2:.S=.o)))
 $(eval $(call prepend-unique,$(call tdir,$2),mkdirs))
 $(addprefix $(builddir)/$(basename $2),.b .o) : \
@@ -74,7 +71,7 @@ define add-csrc
 $(eval $(call tvar,$(2:.c=.o))-ccflags := $(patsubst %,%,\
   $(ccflags) $($1-ccflags) $($2-ccflags)))
 $(if $(no-deps),,$(eval -include $(builddir)/$(2:.c=.d)))
-cleanfiles += $(builddir)/$(basename $2).[bdios]
+cleanfiles += $(call tvar,$(basename $2).[bdios])
 $(eval $(call tvar,$1)-objs += $(call tvar,$(2:.c=.o)))
 $(eval $(call prepend-unique,$(call tdir,$2),mkdirs))
 $(addprefix $(builddir)/$(basename $2),.b .d .i .o .s) : \
@@ -94,8 +91,9 @@ $(foreach s,$(filter %.c,$(sort $($1-sources))),\
 all : $(builddir)/$1
 $(builddir)/$1 : $($(call tvar,$1)-objs) $($(call tvar,$1)-libs) \
                  Makefile $(srcdir)/include.mk | $(builddir)
-cleanfiles += $(builddir)/$1
+cleanfiles += $(call tvar,$1)
 undefine $1-sources
+undefine $1-asflags
 undefine $1-ccflags
 undefine $1-libs
 endef
