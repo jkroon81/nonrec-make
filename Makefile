@@ -4,7 +4,7 @@ MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
 ifdef O
 $(eval $(shell mkdir -p $O))
 $(or $(MAKECMDGOALS),_target) :
-	@$(MAKE) -C $O -f $(top-srcdir)/Makefile $(MAKECMDGOALS) O=
+	@$(MAKE) -C $O -f $(top-srcdir)/Makefile $(@:_target=) O=
 else
 vpath %.c $(top-srcdir)
 vpath %.S $(top-srcdir)

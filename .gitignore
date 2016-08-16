@@ -1,2 +1,5 @@
+*.[abdios]
 *~
-/build
+subdir1/nils/gen.c
+subdir1/sven/katt.S
+test[12345]
