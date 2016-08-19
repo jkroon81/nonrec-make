@@ -14,7 +14,7 @@ empty :=
 space := $(empty) $(empty)
 mkdirs :=
 default-v := 0
-no-deps := $(filter clean% print-%,$(MAKECMDGOALS))
+no-deps := $(filter clean print-%,$(MAKECMDGOALS))
 
 tdir = $(filter-out .,$(call trim-end,/,$(dir $(builddir)/$1)))
 tvar = $(patsubst ./%,%,$(builddir)/$1)
@@ -24,7 +24,7 @@ norm-path = $(call trim-start,/,$(patsubst $(CURDIR)%,%,$(abspath $1)))
 prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
 
 define add-cmd
-$2-0 = @echo "$1 $$(or $4,.)";
+$2-0 = @echo "$1 $4";
 $2-  = $$($2-$(default-v))
 $2   = $$($2-$(V))$3
 endef
@@ -49,9 +49,9 @@ $(eval $(call add-cmd,GEN    ,gen,,$$@))
 %.o : %.c
 	$(cc) $($@-ccflags) -MMD -MP $< -o $@
 %.s : %.c
-	$(ccas) $($(@:.s=.o)-ccflags) -MMD -MP $< -o $@
+	$(ccas) $($(@:%.s=%.o)-ccflags) -MMD -MP $< -o $@
 %.i : %.c
-	$(cpp) $($(@:.i=.o)-ccflags) -MMD -MP $< -o $@
+	$(cpp) $($(@:%.i=%.o)-ccflags) -MMD -MP $< -o $@
 %.b : %.o
 	$(objdump) $< > $@
 
@@ -67,7 +67,7 @@ s-dep = asm : $1
 define add-source
 $(eval $(call tvar,$2.o)-$($3-flags) := \
   $($($3-flags)) $($1-$($3-flags)) $($2$3-$($3-flags)))
-$(if $(no-deps),,$(eval -include $(builddir)/$2.d))
+$(if $(no-deps),,-include $(builddir)/$2.d)
 cleanfiles += $(call tvar,$2.[$(subst $(space),,$($3-targets)]))
 $(eval $(call tvar,$1)-objs += $(call tvar,$2.o))
 $(eval $(call prepend-unique,$(call tdir,$2),mkdirs))
@@ -113,7 +113,7 @@ bin :=
 lib :=
 subdir :=
 built-sources :=
-$(if $1,$$(eval mkdirs := $1 $(mkdirs)))
+$(if $1,mkdirs := $1 $(mkdirs))
 asflags := $$($$(or $$(call norm-path,$$(builddir)/..),.)-asflags)
 ccflags := $$($$(or $$(call norm-path,$$(builddir)/..),.)-ccflags)
 include $$(srcdir)/include.mk
@@ -129,7 +129,7 @@ $$(eval $$(builddir)-cleanfiles := $$(cleanfiles))
 clean : _clean-$$(builddir)
 _clean-$$(builddir) :
 	$$(clean) $$($$(@:_clean-%=%)-cleanfiles)
-$$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$$(if $1,$1/)$$s)))
+$$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$(if $1,$1/)$$s)))
 undefine srcdir
 undefine builddir
 undefine cleanfiles
