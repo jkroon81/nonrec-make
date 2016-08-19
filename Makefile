@@ -1,5 +1,4 @@
 abs-top-srcdir := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-top-srcdir := $(shell realpath --relative-to $(CURDIR) $(abs-top-srcdir))
 MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
 
 ifdef O
@@ -7,15 +6,12 @@ $(eval $(shell mkdir -p $O))
 $(or $(MAKECMDGOALS),_target) :
 	@$(MAKE) -C $O -f $(abs-top-srcdir)/Makefile $(@:_target=) O=
 else
-vpath %.c $(top-srcdir)
-vpath %.S $(top-srcdir)
-vpath Makefile $(top-srcdir)
-
 empty :=
 space := $(empty) $(empty)
 mkdirs :=
 default-v := 0
 no-deps := $(filter clean print-%,$(MAKECMDGOALS))
+top-srcdir := $(shell realpath --relative-to $(CURDIR) $(abs-top-srcdir))
 
 tdir = $(filter-out .,$(call trim-end,/,$(dir $(builddir)/$1)))
 tvar = $(patsubst ./%,%,$(builddir)/$1)
@@ -23,6 +19,10 @@ trim-start = $(if $(filter $1%,$2),$(call trim-start,$1,$(2:$1%=%)),$2)
 trim-end   = $(if $(filter %$1,$2),$(call trim-end  ,$1,$(2:%$1=%)),$2)
 norm-path = $(call trim-start,/,$(patsubst $(CURDIR)%,%,$(abspath $1)))
 prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
+
+vpath %.c $(top-srcdir)
+vpath %.S $(top-srcdir)
+vpath Makefile $(top-srcdir)
 
 define add-cmd
 $2-0 = @echo "$1$4";
