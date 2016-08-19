@@ -1,10 +1,11 @@
-top-srcdir := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+abs-top-srcdir := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+top-srcdir := $(shell realpath --relative-to $(CURDIR) $(abs-top-srcdir))
 MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
 
 ifdef O
 $(eval $(shell mkdir -p $O))
 $(or $(MAKECMDGOALS),_target) :
-	@$(MAKE) -C $O -f $(top-srcdir)/Makefile $(@:_target=) O=
+	@$(MAKE) -C $O -f $(abs-top-srcdir)/Makefile $(@:_target=) O=
 else
 vpath %.c $(top-srcdir)
 vpath %.S $(top-srcdir)
@@ -148,7 +149,7 @@ $(eval $(call add-subdir,))
 $(mkdirs) :
 	$(q)mkdir -p $@
 
-clean : $(top-srcdir)-rmdir-flags := --ignore-fail-on-non-empty
+clean : $(abs-top-srcdir)-rmdir-flags := --ignore-fail-on-non-empty
 clean :
 	$(q)for d in $(mkdirs); do \
 	    if [ -d $$d ]; then \
