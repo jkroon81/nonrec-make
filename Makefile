@@ -25,7 +25,7 @@ norm-path = $(call trim-start,/,$(patsubst $(CURDIR)%,%,$(abspath $1)))
 prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
 
 define add-cmd
-$2-0 = @echo "$1 $4";
+$2-0 = @echo "$1$4";
 $2-  = $$($2-$(default-v))
 $2   = $$($2-$(V))$3
 endef
@@ -34,16 +34,16 @@ q-0 = @
 q-  = $(q-$(default-v))
 q   = $(q-$(V))
 
-$(eval $(call add-cmd,AR     ,ar,ar,$$@))
-$(eval $(call add-cmd,RANLIB ,ranlib,ranlib,$$@))
-$(eval $(call add-cmd,AS     ,as,as,$$@))
-$(eval $(call add-cmd,CC     ,cc,gcc -c,$$@))
-$(eval $(call add-cmd,CCAS   ,ccas,gcc -S,$$@))
-$(eval $(call add-cmd,CPP    ,cpp,gcc -E,$$@))
-$(eval $(call add-cmd,CCLD   ,ccld,gcc,$$@))
-$(eval $(call add-cmd,OBJDUMP,objdump,objdump -rd,$$@))
-$(eval $(call add-cmd,CLEAN  ,clean,rm -f,$$(@:_clean-%=%)))
-$(eval $(call add-cmd,GEN    ,gen,,$$@))
+$(eval $(call add-cmd,  AR      ,ar,ar,$$@))
+$(eval $(call add-cmd,  RANLIB  ,ranlib,ranlib,$$@))
+$(eval $(call add-cmd,  AS      ,as,as,$$@))
+$(eval $(call add-cmd,  CC      ,cc,gcc -c,$$@))
+$(eval $(call add-cmd,  CCAS    ,ccas,gcc -S,$$@))
+$(eval $(call add-cmd,  CPP     ,cpp,gcc -E,$$@))
+$(eval $(call add-cmd,  CCLD    ,ccld,gcc,$$@))
+$(eval $(call add-cmd,  OBJDUMP ,objdump,objdump -rd,$$@))
+$(eval $(call add-cmd,  CLEAN   ,clean,rm -f,$$(@:_clean-%=%)))
+$(eval $(call add-cmd,  GEN     ,gen,,$$@))
 
 %.o : %.S
 	$(as) $($@-asflags) $< -o $@
