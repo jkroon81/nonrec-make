@@ -6,8 +6,6 @@ $(eval $(shell mkdir -p $O))
 $(or $(MAKECMDGOALS),_target) :
 	@$(MAKE) -C $O -f $(abs-top-srcdir)/Makefile $(@:_target=) O=
 else
-empty :=
-space := $(empty) $(empty)
 mkdirs :=
 default-v := 0
 no-deps := $(filter clean print-%,$(MAKECMDGOALS))
@@ -69,7 +67,7 @@ define add-source
 $(eval $(call tvar,$2.o)-$($3-flags) := \
   $($($3-flags)) $($1-$($3-flags)) $($2$3-$($3-flags)))
 $(if $(no-deps),,-include $(builddir)/$2.d)
-cleanfiles += $(call tvar,$2.[$(subst $(space),,$($3-targets)]))
+cleanfiles += $(call tvar,$2.[$(subst $(subst ,, ),,$($3-targets)]))
 $(eval $(call tvar,$1)-objs += $(call tvar,$2.o))
 $(eval $(call prepend-unique,$(call tdir,$2),mkdirs))
 $(addprefix $(builddir)/$2,$(addprefix .,$($3-targets))) : \
