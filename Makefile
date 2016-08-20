@@ -22,7 +22,6 @@ prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
 
 vpath %.c $(top-srcdir)
 vpath %.S $(top-srcdir)
-vpath Makefile $(top-srcdir)
 
 define add-cmd
 $2-0 = @echo "$1$4";
@@ -119,7 +118,7 @@ built-sources :=
 $(if $1,mkdirs := $1 $(mkdirs))
 asflags := $$($$(or $$(call norm-path,$$(builddir)/..),.)-asflags)
 ccflags := $$($$(or $$(call norm-path,$$(builddir)/..),.)-ccflags)
-$$(eval $$(builddir)-makefile-deps := $(if $1,,Makefile))
+$$(eval $$(builddir)-makefile-deps := $(if $1,,$$(call sfile,Makefile)))
 $$(eval $$(builddir)-makefile-deps += $$($$(or $$(call norm-path,\
   $$(builddir)/..),.)-makefile-deps) $$(call sfile,include.mk))
 include $$(srcdir)/include.mk
