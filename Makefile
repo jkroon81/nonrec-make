@@ -6,14 +6,22 @@ $(eval $(shell mkdir -p $O))
 $(or $(MAKECMDGOALS),_target) :
 	@$(MAKE) -C $O -f $(abs-top-srcdir)/Makefile $(@:_target=) O=
 else
+env :=
 asflags :=
 ccflags :=
 -include Jconfig
+jbuild-env := $(env)
 jbuild-asflags := $(asflags)
 jbuild-ccflags := $(ccflags)
+undefine env
 undefine asflags
 undefine ccflags
 
+ifdef jbuild-env
+$(or $(MAKECMDGOALS),_target) :
+	@. $(jbuild-env) && \
+	$(MAKE) -f $(abs-top-srcdir)/Makefile $(@:_target=) jbuild-env=
+else
 objs :=
 mkdirs :=
 default-v := 0
@@ -38,14 +46,20 @@ q-0 = @
 q-  = $(q-$(default-v))
 q   = $(q-$(V))
 
-$(eval $(call add-cmd,  AR      ,ar,ar,$$@))
-$(eval $(call add-cmd,  RANLIB  ,ranlib,ranlib,$$@))
-$(eval $(call add-cmd,  AS      ,as,as,$$@))
-$(eval $(call add-cmd,  CC      ,cc,gcc -c,$$@))
-$(eval $(call add-cmd,  CCAS    ,ccas,gcc -S,$$@))
-$(eval $(call add-cmd,  CPP     ,cpp,gcc -E,$$@))
-$(eval $(call add-cmd,  CCLD    ,ccld,gcc,$$@))
-$(eval $(call add-cmd,  OBJDUMP ,objdump,objdump -rd,$$@))
+AR      ?= ar
+RANLIB  ?= ranlib
+AS      ?= as
+CC      ?= cc
+OBJDUMP ?= objdump
+
+$(eval $(call add-cmd,  AR      ,ar,$(AR),$$@))
+$(eval $(call add-cmd,  RANLIB  ,ranlib,$(RANLIB),$$@))
+$(eval $(call add-cmd,  AS      ,as,$(AS),$$@))
+$(eval $(call add-cmd,  CC      ,cc,$(CC) -c,$$@))
+$(eval $(call add-cmd,  CCAS    ,ccas,$(CC) -S,$$@))
+$(eval $(call add-cmd,  CPP     ,cpp,$(CC) -E,$$@))
+$(eval $(call add-cmd,  CCLD    ,ccld,$(CC),$$@))
+$(eval $(call add-cmd,  OBJDUMP ,objdump,$(OBJDUMP) -rd,$$@))
 $(eval $(call add-cmd,  CLEAN   ,clean,rm -f,$$(@:_clean-%=%)))
 $(eval $(call add-cmd,  GEN     ,gen,,$$@))
 
@@ -108,7 +122,7 @@ define add-lib
 $(eval $(call add-bin-lib-common,$1))
 $(builddir)/$1 :
 	$$(q)rm -f $$@
-	$$(ar) cru $$@ $$($$@-objs)
+	$$(ar) crD $$@ $$($$@-objs)
 	$$(ranlib) $$@
 endef
 
@@ -178,4 +192,5 @@ print-data-base :
 
 .PHONY : all asm clean cpp print-% print-data-base
 
+endif
 endif
