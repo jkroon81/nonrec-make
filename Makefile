@@ -12,12 +12,9 @@ default-v := 0
 no-deps := $(filter clean print-%,$(MAKECMDGOALS))
 top-srcdir := $(shell realpath --relative-to $(CURDIR) $(abs-top-srcdir))
 
-bdir = $(filter-out .,$(call trim-end,/,$(dir $(builddir)/$1)))
-bfile = $(patsubst ./%,%,$(builddir)/$1)
-sfile = $(patsubst ./%,%,$(srcdir)/$1)
-trim-start = $(if $(filter $1%,$2),$(call trim-start,$1,$(2:$1%=%)),$2)
-trim-end   = $(if $(filter %$1,$2),$(call trim-end  ,$1,$(2:%$1=%)),$2)
-norm-path = $(call trim-start,/,$(patsubst $(CURDIR)%,%,$(abspath $1)))
+map = $(foreach a,$2,$(call $1,$a))
+bpath = $(patsubst /%,%,$(patsubst $(CURDIR)%,%,$(abspath $(builddir)/$1)))
+spath = $(patsubst ./%,%,$(srcdir)/$1)
 prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
 
 vpath %.c $(top-srcdir)
@@ -65,28 +62,28 @@ s-dep = asm : $1
 .c-targets := b d i o s
 
 define add-source
-$(if $(filter $(call bfile,$2.o),$(objs)),$(error Multiple $(call bfile,$2.o)))
-objs += $(call bfile,$2.o)
-$(eval $(call bfile,$2.o)-$($3-flags) := \
+$(if $(filter $(call bpath,$2.o),$(objs)),$(error Multiple $(call bpath,$2.o)))
+objs += $(call bpath,$2.o)
+$(eval $(call bpath,$2.o)-$($3-flags) := \
   $($($3-flags)) $($1-$($3-flags)) $($2$3-$($3-flags)))
 $(if $(no-deps),,-include $(builddir)/$2.d)
-cleanfiles += $(call bfile,$2.[$(subst $(subst ,, ),,$($3-targets)]))
-$(eval $(call bfile,$1)-objs += $(call bfile,$2.o))
-$(eval $(call prepend-unique,$(call bdir,$2),mkdirs))
+cleanfiles += $(call bpath,$2.[$(subst $(subst ,, ),,$($3-targets)]))
+$(eval $(call bpath,$1)-objs += $(call bpath,$2.o))
+$(eval $(call prepend-unique,$(call bpath,$2/..),mkdirs))
 $(addprefix $(builddir)/$2,$(addprefix .,$($3-targets))) : \
-  $($(builddir)-makefile-deps) | $(call bdir,$2)
+  $($(builddir)-makefile-deps) | $(call bpath,$2/..)
 $(foreach s,$($3-targets),$(eval $(call $s-dep,$(builddir)/$2.$s)))
 undefine $2$3-$($3-flags)
 endef
 
 define add-bin-lib-common
-$(eval $(call bfile,$1)-libs := $(call norm-path,$($1-libs)))
+$(eval $(call bpath,$1)-libs := $(call map,bpath,$($1-libs)))
 $(foreach s,$(sort $($1-sources)),$(eval \
   $(call add-source,$1,$(basename $s),$(suffix $s))))
 all : $(builddir)/$1
-$(builddir)/$1 : $($(call bfile,$1)-objs) $($(call bfile,$1)-libs) \
+$(builddir)/$1 : $($(call bpath,$1)-objs) $($(call bpath,$1)-libs) \
                  $($(builddir)-makefile-deps) | $(builddir)
-cleanfiles += $(call bfile,$1)
+cleanfiles += $(call bpath,$1)
 undefine $1-sources
 undefine $1-asflags
 undefine $1-ccflags
@@ -116,15 +113,16 @@ lib :=
 subdir :=
 built-sources :=
 $(if $1,mkdirs := $1 $(mkdirs))
-asflags := $$($$(or $$(call norm-path,$$(builddir)/..),.)-asflags)
-ccflags := $$($$(or $$(call norm-path,$$(builddir)/..),.)-ccflags)
-$$(eval $$(builddir)-makefile-deps := $(if $1,,$$(call sfile,Makefile)))
-$$(eval $$(builddir)-makefile-deps += $$($$(or $$(call norm-path,\
-  $$(builddir)/..),.)-makefile-deps) $$(call sfile,include.mk))
+asflags := $$($$(or $$(call bpath,..),.)-asflags)
+ccflags := $$($$(or $$(call bpath,..),.)-ccflags)
+$$(eval $$(builddir)-makefile-deps := $(if $1,,$$(call spath,Makefile)))
+$$(eval $$(builddir)-makefile-deps += \
+  $$($$(or $$(call bpath,..),.)-makefile-deps) $$(call spath,include.mk))
 include $$(srcdir)/include.mk
-subdir := $$(call trim-end,/,$$(subdir))
+subdir := $$(patsubst %/,%,$$(subdir))
 cleanfiles += $$(addprefix $$(builddir)/,$$(built-sources))
-$$(foreach s,$$(built-sources),$$(eval $$(builddir)/$$s : | $$(call bdir,$$s)))
+$$(foreach s,$$(built-sources),$$(eval $$(builddir)/$$s : \
+  | $$(call bpath,$$s/..)))
 $$(eval $$(builddir)-asflags := $$(asflags))
 $$(eval $$(builddir)-ccflags := $$(ccflags))
 $$(foreach b,$$(bin),$$(eval $$(call add-bin,$$b)))
