@@ -11,8 +11,8 @@ default-v := 0
 no-deps := $(filter clean print-%,$(MAKECMDGOALS))
 top-srcdir := $(shell realpath --relative-to $(CURDIR) $(abs-top-srcdir))
 
-tdir = $(filter-out .,$(call trim-end,/,$(dir $(builddir)/$1)))
-tvar = $(patsubst ./%,%,$(builddir)/$1)
+bdir = $(filter-out .,$(call trim-end,/,$(dir $(builddir)/$1)))
+bfile = $(patsubst ./%,%,$(builddir)/$1)
 trim-start = $(if $(filter $1%,$2),$(call trim-start,$1,$(2:$1%=%)),$2)
 trim-end   = $(if $(filter %$1,$2),$(call trim-end  ,$1,$(2:%$1=%)),$2)
 norm-path = $(call trim-start,/,$(patsubst $(CURDIR)%,%,$(abspath $1)))
@@ -64,26 +64,26 @@ s-dep = asm : $1
 .c-targets := b d i o s
 
 define add-source
-$(eval $(call tvar,$2.o)-$($3-flags) := \
+$(eval $(call bfile,$2.o)-$($3-flags) := \
   $($($3-flags)) $($1-$($3-flags)) $($2$3-$($3-flags)))
 $(if $(no-deps),,-include $(builddir)/$2.d)
-cleanfiles += $(call tvar,$2.[$(subst $(subst ,, ),,$($3-targets)]))
-$(eval $(call tvar,$1)-objs += $(call tvar,$2.o))
-$(eval $(call prepend-unique,$(call tdir,$2),mkdirs))
+cleanfiles += $(call bfile,$2.[$(subst $(subst ,, ),,$($3-targets)]))
+$(eval $(call bfile,$1)-objs += $(call bfile,$2.o))
+$(eval $(call prepend-unique,$(call bdir,$2),mkdirs))
 $(addprefix $(builddir)/$2,$(addprefix .,$($3-targets))) : \
-  Makefile $(srcdir)/include.mk | $(call tdir,$2)
+  Makefile $(srcdir)/include.mk | $(call bdir,$2)
 $(foreach s,$($3-targets),$(eval $(call $s-dep,$(builddir)/$2.$s)))
 undefine $2$3-$($3-flags)
 endef
 
 define add-bin-lib-common
-$(eval $(call tvar,$1)-libs := $(call norm-path,$($1-libs)))
+$(eval $(call bfile,$1)-libs := $(call norm-path,$($1-libs)))
 $(foreach s,$(sort $($1-sources)),$(eval \
   $(call add-source,$1,$(basename $s),$(suffix $s))))
 all : $(builddir)/$1
-$(builddir)/$1 : $($(call tvar,$1)-objs) $($(call tvar,$1)-libs) \
+$(builddir)/$1 : $($(call bfile,$1)-objs) $($(call bfile,$1)-libs) \
                  Makefile $(srcdir)/include.mk | $(builddir)
-cleanfiles += $(call tvar,$1)
+cleanfiles += $(call bfile,$1)
 undefine $1-sources
 undefine $1-asflags
 undefine $1-ccflags
@@ -118,7 +118,7 @@ ccflags := $$($$(or $$(call norm-path,$$(builddir)/..),.)-ccflags)
 include $$(srcdir)/include.mk
 subdir := $$(call trim-end,/,$$(subdir))
 cleanfiles += $$(addprefix $$(builddir)/,$$(built-sources))
-$$(foreach s,$$(built-sources),$$(eval $$(builddir)/$$s : | $$(call tdir,$$s)))
+$$(foreach s,$$(built-sources),$$(eval $$(builddir)/$$s : | $$(call bdir,$$s)))
 $$(eval $$(builddir)-asflags := $$(asflags))
 $$(eval $$(builddir)-ccflags := $$(ccflags))
 $$(foreach b,$$(bin),$$(eval $$(call add-bin,$$b)))
