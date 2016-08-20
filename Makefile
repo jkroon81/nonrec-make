@@ -144,7 +144,10 @@ undefine asflags
 undefine ccflags
 endef
 
-all :
+all : Makefile
+
+Makefile :
+	$(gen)echo "include $(top-srcdir)/$@" > $@
 
 $(eval $(call add-subdir,))
 

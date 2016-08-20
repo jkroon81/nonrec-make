@@ -1,5 +1,7 @@
 *.[abdios]
 *~
-subdir1/nils/gen.c
-subdir1/sven/katt.S
+Makefile
+!/Makefile
+gen.c
+katt.S
 test[12345]
