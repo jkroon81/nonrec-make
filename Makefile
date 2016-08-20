@@ -13,6 +13,7 @@ top-srcdir := $(shell realpath --relative-to $(CURDIR) $(abs-top-srcdir))
 
 bdir = $(filter-out .,$(call trim-end,/,$(dir $(builddir)/$1)))
 bfile = $(patsubst ./%,%,$(builddir)/$1)
+sfile = $(patsubst ./%,%,$(srcdir)/$1)
 trim-start = $(if $(filter $1%,$2),$(call trim-start,$1,$(2:$1%=%)),$2)
 trim-end   = $(if $(filter %$1,$2),$(call trim-end  ,$1,$(2:%$1=%)),$2)
 norm-path = $(call trim-start,/,$(patsubst $(CURDIR)%,%,$(abspath $1)))
@@ -71,7 +72,7 @@ cleanfiles += $(call bfile,$2.[$(subst $(subst ,, ),,$($3-targets)]))
 $(eval $(call bfile,$1)-objs += $(call bfile,$2.o))
 $(eval $(call prepend-unique,$(call bdir,$2),mkdirs))
 $(addprefix $(builddir)/$2,$(addprefix .,$($3-targets))) : \
-  Makefile $(srcdir)/include.mk | $(call bdir,$2)
+  $($(builddir)-makefile-deps) | $(call bdir,$2)
 $(foreach s,$($3-targets),$(eval $(call $s-dep,$(builddir)/$2.$s)))
 undefine $2$3-$($3-flags)
 endef
@@ -82,7 +83,7 @@ $(foreach s,$(sort $($1-sources)),$(eval \
   $(call add-source,$1,$(basename $s),$(suffix $s))))
 all : $(builddir)/$1
 $(builddir)/$1 : $($(call bfile,$1)-objs) $($(call bfile,$1)-libs) \
-                 Makefile $(srcdir)/include.mk | $(builddir)
+                 $($(builddir)-makefile-deps) | $(builddir)
 cleanfiles += $(call bfile,$1)
 undefine $1-sources
 undefine $1-asflags
@@ -105,7 +106,7 @@ $(builddir)/$1 :
 endef
 
 define add-subdir
-srcdir := $(top-srcdir)$(if $1,/$1)
+srcdir := $(patsubst ./%,%,$(top-srcdir)$(if $1,/$1))
 builddir := $(if $1,$1,.)
 cleanfiles :=
 bin :=
@@ -115,6 +116,9 @@ built-sources :=
 $(if $1,mkdirs := $1 $(mkdirs))
 asflags := $$($$(or $$(call norm-path,$$(builddir)/..),.)-asflags)
 ccflags := $$($$(or $$(call norm-path,$$(builddir)/..),.)-ccflags)
+$$(eval $$(builddir)-makefile-deps := $(if $1,,Makefile))
+$$(eval $$(builddir)-makefile-deps += $$($$(or $$(call norm-path,\
+  $$(builddir)/..),.)-makefile-deps) $$(call sfile,include.mk))
 include $$(srcdir)/include.mk
 subdir := $$(call trim-end,/,$$(subdir))
 cleanfiles += $$(addprefix $$(builddir)/,$$(built-sources))
