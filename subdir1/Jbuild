@@ -9,8 +9,8 @@ test5-libs = ../subdir2/libfoo.a
 subdir = subdir2
 built-sources = sven/katt.S nils/gen.c
 
-$(builddir)/nils/gen.c : $(srcdir)/include.mk
+$(builddir)/nils/gen.c : $(srcdir)/Jbuild
 	$(gen)touch $@
 
-$(builddir)/sven/katt.S : $(srcdir)/include.mk
+$(builddir)/sven/katt.S : $(srcdir)/Jbuild
 	$(gen)touch $@

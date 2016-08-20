@@ -117,8 +117,8 @@ asflags := $$($$(or $$(call bpath,..),.)-asflags)
 ccflags := $$($$(or $$(call bpath,..),.)-ccflags)
 $$(eval $$(builddir)-makefile-deps := $(if $1,,$$(call spath,Makefile)))
 $$(eval $$(builddir)-makefile-deps += \
-  $$($$(or $$(call bpath,..),.)-makefile-deps) $$(call spath,include.mk))
-include $$(srcdir)/include.mk
+  $$($$(or $$(call bpath,..),.)-makefile-deps) $$(call spath,Jbuild))
+include $$(srcdir)/Jbuild
 subdir := $$(patsubst %/,%,$$(subdir))
 cleanfiles += $$(addprefix $$(builddir)/,$$(built-sources))
 $$(foreach s,$$(built-sources),$$(eval $$(builddir)/$$s : \
