@@ -10,17 +10,17 @@ env :=
 asflags :=
 ccflags :=
 -include Jconfig
-jbuild-env := $(env)
-jbuild-asflags := $(asflags)
-jbuild-ccflags := $(ccflags)
+build-env := $(env)
+build-asflags := $(asflags)
+build-ccflags := $(ccflags)
 undefine env
 undefine asflags
 undefine ccflags
 
-ifdef jbuild-env
+ifdef build-env
 $(or $(MAKECMDGOALS),_target) :
-	@. $(jbuild-env) && \
-	$(MAKE) -f $(abs-top-srcdir)/Makefile $(@:_target=) jbuild-env=
+	@. $(build-env) && \
+	$(MAKE) -f $(abs-top-srcdir)/Makefile $(@:_target=) build-env=
 else
 objs :=
 mkdirs :=
@@ -87,7 +87,7 @@ define add-source
 $(if $(filter $(call bpath,$2.o),$(objs)),$(error Multiple $(call bpath,$2.o)))
 objs += $(call bpath,$2.o)
 $(eval $(call bpath,$2.o)-$($3-flags) := \
-  $($($3-flags)) $($1-$($3-flags)) $($2$3-$($3-flags)) $(jbuild-$($3-flags)))
+  $($($3-flags)) $($1-$($3-flags)) $($2$3-$($3-flags)) $(build-$($3-flags)))
 $(if $(no-deps),,-include $(builddir)/$2.d)
 cleanfiles += $(call bpath,$2.[$(subst $(subst ,, ),,$($3-targets)]))
 $(eval $(call bpath,$1)-objs += $(call bpath,$2.o))
