@@ -6,6 +6,7 @@ $(eval $(shell mkdir -p $O))
 $(or $(MAKECMDGOALS),_target) :
 	@$(MAKE) -C $O -f $(abs-top-srcdir)/Makefile $(@:_target=) O=
 else
+objs :=
 mkdirs :=
 default-v := 0
 no-deps := $(filter clean print-%,$(MAKECMDGOALS))
@@ -65,6 +66,8 @@ s-dep = asm : $1
 .c-targets := b d i o s
 
 define add-source
+$(if $(filter $(call bfile,$2.o),$(objs)),$(error Multiple $(call bfile,$2.o)))
+objs += $(call bfile,$2.o)
 $(eval $(call bfile,$2.o)-$($3-flags) := \
   $($($3-flags)) $($1-$($3-flags)) $($2$3-$($3-flags)))
 $(if $(no-deps),,-include $(builddir)/$2.d)
