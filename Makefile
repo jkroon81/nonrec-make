@@ -71,15 +71,15 @@ $(eval $(call add-cmd,  CLEAN   ,clean,rm -f,$$(@:_clean-%=%)))
 $(eval $(call add-cmd,  GEN     ,gen,,$$@))
 
 %.o : %.S
-	$(as) $($@-asflags) $< -o $@
+	$(as) $(strip $($@-asflags) $< -o $@)
 %.o : %.c
-	$(cc) $($@-ccflags) $< -o $@
+	$(cc) $(strip $($@-ccflags) $< -o $@)
 %.s : %.c
-	$(ccas) $($(@:%.s=%.o)-ccflags) $< -o $@
+	$(ccas) $(strip $($(@:%.s=%.o)-ccflags) $< -o $@)
 %.i : %.c
-	$(cpp) $($(@:%.i=%.o)-ccflags) $< -o $@
+	$(cpp) $(strip $($(@:%.i=%.o)-ccflags) $< -o $@)
 %.b : %.o
-	$(objdump) $< > $@
+	$(objdump) $(strip $< > $@)
 
 b-dep = objdump : $1
 i-dep = cpp : $1
@@ -138,7 +138,7 @@ $(eval $(call bpath,$1)-ldflags := \
   $(LDFLAGS) \
 )
 $(builddir)/$1 :
-	$$(ccld) $$($$@-ldflags) $$($$@-objs) $$($$@-libs) -o $$@
+	$$(ccld) $$(strip $$($$@-ldflags) $$($$@-objs) $$($$@-libs) -o $$@)
 endef
 
 define add-lib
