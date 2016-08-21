@@ -1,2 +1,0 @@
-env = ~/tutorial/sdk/environment-setup-cortexa8hf-neon-oe-linux-gnueabi
-ccflags = -g

@@ -6,10 +6,13 @@ $(eval $(shell mkdir -p $O))
 $(or $(MAKECMDGOALS),_target) :
 	@$(MAKE) -C $O -f $(abs-top-srcdir)/Makefile $(@:_target=) O=
 else
+top-srcdir := $(shell realpath --relative-to $(CURDIR) $(abs-top-srcdir))
+fragments := $(wildcard $(addprefix $(top-srcdir)/config/,\
+  $(subst -, ,$(notdir $(CURDIR)))) Jconfig)
 env :=
 asflags :=
 ccflags :=
--include Jconfig
+$(foreach f,$(fragments),$(eval include $f))
 build-env := $(env)
 build-asflags := $(asflags)
 build-ccflags := $(ccflags)
@@ -26,7 +29,6 @@ objs :=
 mkdirs :=
 default-v := 0
 no-deps := $(filter clean print-%,$(MAKECMDGOALS))
-top-srcdir := $(shell realpath --relative-to $(CURDIR) $(abs-top-srcdir))
 
 map = $(foreach a,$2,$(call $1,$a))
 bpath = $(patsubst /%,%,$(patsubst $(CURDIR)%,%,$(abspath $(builddir)/$1)))
@@ -138,7 +140,7 @@ $(if $1,mkdirs := $1 $(mkdirs))
 asflags := $$($$(or $$(call bpath,..),.)-asflags)
 ccflags := $$($$(or $$(call bpath,..),.)-ccflags)
 $$(eval $$(builddir)-makefile-deps := \
-  $(if $1,,$$(call spath,Makefile) $(wildcard Jconfig)))
+  $(if $1,,$$(call spath,Makefile) $(fragments)))
 $$(eval $$(builddir)-makefile-deps += \
   $$($$(or $$(call bpath,..),.)-makefile-deps) $$(call spath,Jbuild))
 include $$(srcdir)/Jbuild
