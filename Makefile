@@ -81,9 +81,10 @@ i-dep = cpp : $1
 s-dep = asm : $1
 
 .S-flags := asflags
-.S-targets := b o
+.S-built-suffixes := b o
 .c-flags := ccflags
-.c-targets := b d i o s
+.c-built-suffixes := b i o s
+.c-extra-suffixes := d
 
 define add-source
 $(if $(filter $(call bpath,$2.o),$(objs)),$(error Multiple $(call bpath,$2.o)))
@@ -91,12 +92,13 @@ objs += $(call bpath,$2.o)
 $(eval $(call bpath,$2.o)-$($3-flags) := \
   $($($3-flags)) $($1-$($3-flags)) $($2$3-$($3-flags)) $(build-$($3-flags)))
 $(if $(no-deps),,-include $(builddir)/$2.d)
-cleanfiles += $(call bpath,$2.[$(subst $(subst ,, ),,$($3-targets)]))
+cleanfiles += $(call bpath,$2.[$(subst $(subst ,, ),,\
+  $(sort $($3-built-suffixes) $($3-extra-suffixes)))])
 $(eval $(call bpath,$1)-objs += $(call bpath,$2.o))
 $(eval $(call prepend-unique,$(call bpath,$2/..),mkdirs))
-$(addprefix $(builddir)/$2,$(addprefix .,$($3-targets))) : \
+$(addprefix $(builddir)/$2,$(addprefix .,$($3-built-suffixes))) : \
   $($(builddir)-makefile-deps) | $(call bpath,$2/..)
-$(foreach s,$($3-targets),$(eval $(call $s-dep,$(builddir)/$2.$s)))
+$(foreach s,$($3-built-suffixes),$(eval $(call $s-dep,$(builddir)/$2.$s)))
 undefine $2$3-$($3-flags)
 endef
 
