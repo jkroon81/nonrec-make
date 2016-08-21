@@ -13,13 +13,16 @@ fragments := $(wildcard $(addprefix $(top-srcdir)/config/,\
 env :=
 asflags :=
 ccflags :=
+ldflags :=
 $(foreach f,$(fragments),$(eval include $f))
 build-env := $(env)
 build-asflags := $(asflags)
 build-ccflags := $(ccflags)
+build-ldflags := $(ldflags)
 undefine env
 undefine asflags
 undefine ccflags
+undefine ldflags
 
 ifdef build-env
 .PHONY : $(or $(MAKECMDGOALS),_target)
@@ -122,13 +125,20 @@ cleanfiles += $(call bpath,$1)
 undefine $1-sources
 undefine $1-asflags
 undefine $1-ccflags
+undefine $1-ldflags
 undefine $1-libs
 endef
 
 define add-bin
 $(eval $(call add-bin-lib-common,$1))
+$(eval $(call bpath,$1)-ldflags := \
+  $(build-ldflags) \
+  $(ldflags) \
+  $($1-ldflags) \
+  $(LDFLAGS) \
+)
 $(builddir)/$1 :
-	$$(ccld) $$($$@-objs) $$($$@-libs) -o $$@
+	$$(ccld) $$($$@-ldflags) $$($$@-objs) $$($$@-libs) -o $$@
 endef
 
 define add-lib
@@ -149,6 +159,7 @@ subdir :=
 built-sources :=
 asflags := $$($$(or $$(call bpath,..),.)-asflags)
 ccflags := $$($$(or $$(call bpath,..),.)-ccflags)
+ldflags := $$($$(or $$(call bpath,..),.)-ldflags)
 $(if $1,mkdirs := $1 $(mkdirs))
 $$(eval $$(builddir)-makefile-deps := \
   $(if $1,,$$(call spath,Makefile) $(fragments)))
@@ -161,6 +172,7 @@ $$(foreach s,$$(built-sources),$$(eval $$(builddir)/$$s : \
   | $$(call bpath,$$s/..)))
 $$(eval $$(builddir)-asflags := $$(asflags))
 $$(eval $$(builddir)-ccflags := $$(ccflags))
+$$(eval $$(builddir)-ldflags := $$(ldflags))
 $$(foreach b,$$(bin),$$(eval $$(call add-bin,$$b)))
 $$(foreach l,$$(lib),$$(eval $$(call add-lib,$$l)))
 $$(eval $$(builddir)-cleanfiles := $$(cleanfiles))
@@ -178,6 +190,7 @@ undefine subdir
 undefine built-sources
 undefine asflags
 undefine ccflags
+undefine ldflags
 endef
 
 all : Makefile
