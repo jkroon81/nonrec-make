@@ -3,6 +3,7 @@ MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
 
 ifdef O
 $(eval $(shell mkdir -p $O))
+.PHONY : $(or $(MAKECMDGOALS),_target)
 $(or $(MAKECMDGOALS),_target) :
 	@$(MAKE) -C $O -f $(abs-top-srcdir)/Makefile $(@:_target=) O=
 else
@@ -21,6 +22,7 @@ undefine asflags
 undefine ccflags
 
 ifdef build-env
+.PHONY : $(or $(MAKECMDGOALS),_target)
 $(or $(MAKECMDGOALS),_target) :
 	@. $(build-env) && \
 	$(MAKE) -f $(abs-top-srcdir)/Makefile $(@:_target=) build-env=
