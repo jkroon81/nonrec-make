@@ -57,7 +57,7 @@ OBJDUMP ?= objdump
 $(eval $(call add-cmd,  AR      ,ar,$(AR),$$@))
 $(eval $(call add-cmd,  RANLIB  ,ranlib,$(RANLIB),$$@))
 $(eval $(call add-cmd,  AS      ,as,$(AS),$$@))
-$(eval $(call add-cmd,  CC      ,cc,$(CC) -c,$$@))
+$(eval $(call add-cmd,  CC      ,cc,$(CC) -c -MMD -MP,$$@))
 $(eval $(call add-cmd,  CCAS    ,ccas,$(CC) -S,$$@))
 $(eval $(call add-cmd,  CPP     ,cpp,$(CC) -E,$$@))
 $(eval $(call add-cmd,  CCLD    ,ccld,$(CC),$$@))
@@ -68,11 +68,11 @@ $(eval $(call add-cmd,  GEN     ,gen,,$$@))
 %.o : %.S
 	$(as) $($@-asflags) $< -o $@
 %.o : %.c
-	$(cc) $($@-ccflags) -MMD -MP $< -o $@
+	$(cc) $($@-ccflags) $< -o $@
 %.s : %.c
-	$(ccas) $($(@:%.s=%.o)-ccflags) -MMD -MP $< -o $@
+	$(ccas) $($(@:%.s=%.o)-ccflags) $< -o $@
 %.i : %.c
-	$(cpp) $($(@:%.i=%.o)-ccflags) -MMD -MP $< -o $@
+	$(cpp) $($(@:%.i=%.o)-ccflags) $< -o $@
 %.b : %.o
 	$(objdump) $< > $@
 
@@ -136,9 +136,9 @@ bin :=
 lib :=
 subdir :=
 built-sources :=
-$(if $1,mkdirs := $1 $(mkdirs))
 asflags := $$($$(or $$(call bpath,..),.)-asflags)
 ccflags := $$($$(or $$(call bpath,..),.)-ccflags)
+$(if $1,mkdirs := $1 $(mkdirs))
 $$(eval $$(builddir)-makefile-deps := \
   $(if $1,,$$(call spath,Makefile) $(fragments)))
 $$(eval $$(builddir)-makefile-deps += \
