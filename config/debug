@@ -1,1 +1,2 @@
+asflags = -g
 ccflags = -g -O0
