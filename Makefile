@@ -8,6 +8,7 @@ $(or $(MAKECMDGOALS),_target) :
 	@$(MAKE) -C $O -f $(abs-top-srcdir)/Makefile $(@:_target=) O=
 else
 top-srcdir := $(shell realpath --relative-to $(CURDIR) $(abs-top-srcdir))
+top-builddir := .
 fragments := $(wildcard $(addprefix $(top-srcdir)/config/,\
   $(subst -, ,$(notdir $(CURDIR)))) Jconfig)
 env :=
@@ -36,8 +37,9 @@ default-v := 0
 no-deps := $(filter clean print-%,$(MAKECMDGOALS))
 
 map = $(foreach a,$2,$(call $1,$a))
-bpath = $(patsubst /%,%,$(patsubst $(CURDIR)%,%,$(abspath $(builddir)/$1)))
+bpath = $(call npath,$(builddir)/$1)
 spath = $(patsubst ./%,%,$(srcdir)/$1)
+npath = $(patsubst /%,%,$(patsubst $(CURDIR)%,%,$(abspath $1)))
 prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
 
 vpath %.c $(top-srcdir)
@@ -115,7 +117,7 @@ undefine $2$3-$($3-flags-var)
 endef
 
 define add-bin-lib-common
-$(eval $(call bpath,$1)-libs := $(call map,bpath,$($1-libs)))
+$(eval $(call bpath,$1)-libs := $(call map,npath,$($1-libs)))
 $(foreach s,$(sort $($1-sources)),$(eval \
   $(call add-source,$1,$(basename $s),$(suffix $s))))
 all : $(builddir)/$1
