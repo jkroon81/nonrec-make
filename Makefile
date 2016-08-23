@@ -48,7 +48,7 @@ vpath %.S $(top-srcdir)
 define add-cmd
 $2-0 = @echo "$1$4";
 $2-  = $$($2-$(default-v))
-$2   = $$($2-$(V))$3
+$2   = $$($2-$(V))$(strip $3)
 endef
 
 q-0 = @
