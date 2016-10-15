@@ -21,19 +21,31 @@ function check_arch {
     done
 }
 
-function test_build {
-    make O=$1
-    pushd . > /dev/null
-    cd $1
+function test_makefiles {
     makefiles=`find -name Makefile`
     for f in $makefiles; do
         pushd . > /dev/null
         cd `dirname $f`
         make clean
         make
-        check_arch $2
+        check_arch $1
         popd > /dev/null
     done
+}
+
+function test_build {
+    make O=$1
+    pushd . > /dev/null
+    cd $1
+    test_makefiles $2
+    make distclean
+    popd > /dev/null
+    if [ "$1" != "." ]; then rmdir $1; fi
+    pushd . > /dev/null
+    mkdir -p $1
+    cd $1
+    make -f `dirs -0`/Makefile
+    test_makefiles $2
     make distclean
     popd > /dev/null
     if [ "$1" != "." ]; then rmdir $1; fi
