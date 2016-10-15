@@ -1,5 +1,6 @@
 *.[abdios]
 *~
+*.swp
 Makefile
 !/Makefile
 gen.c

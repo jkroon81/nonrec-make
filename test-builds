@@ -1,0 +1,55 @@
+#!/bin/sh
+set -e
+
+git clean -dxf
+
+export MAKEFLAGS=-j8
+
+nocf=0
+noff=0
+
+function check_arch {
+    files=$(find . -not -path './.git/*' -a -not -name test-builds -a \
+                 \( -name "*.o" -o -executable -type f \) )
+    for f in $files; do
+	let nocf=nocf+1
+	arch=$(file $f | cut -f 2 -d , | tr -d " ")
+	if [ "$arch" != "$1" ]; then
+	    let noff=noff+1
+	    echo "ERROR: $f \"$arch\" != \"$1\""
+	fi
+    done
+}
+
+function test_build {
+    make O=$1
+    pushd . > /dev/null
+    cd $1
+    makefiles=`find -name Makefile`
+    for f in $makefiles; do
+        pushd . > /dev/null
+        cd `dirname $f`
+        make clean
+        make
+        check_arch $2
+        popd > /dev/null
+    done
+    make distclean
+    popd > /dev/null
+    if [ "$1" != "." ]; then rmdir $1; fi
+}
+
+test_build . x86-64
+test_build build x86-64
+test_build build-oe ARM
+
+if [ $noff -ne 0 ]; then
+    echo "$noff/$nocf files with incorrect arch"
+else
+    echo "All $nocf files OK"
+fi
+
+cruft=`git ls-files --others`
+if [ -n "$cruft" ]; then
+   echo "Cruft: $cruft"
+fi
