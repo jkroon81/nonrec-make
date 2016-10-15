@@ -186,7 +186,7 @@ $$(eval $$(call tflags,.,makefile-deps) := \
 subdir := $$(patsubst %/,%,$$(subdir))
 cleanfiles += $$(addprefix $$(builddir)/,$$(built-sources))
 $$(if $$(filter $$(builddir),$$(srcdir)),, \
-  $$(eval distcleanfiles += $$(builddir)/Makefile))
+  $$(eval distcleanfiles += $$(call bpath,Makefile)))
 $$(foreach s,$$(built-sources),$$(eval $$(builddir)/$$s : \
   | $$(call bpath,$$s/..)))
 $$(foreach b,$$(bin),$$(eval $$(call add-bin,$$b)))
