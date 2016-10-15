@@ -1,3 +1,7 @@
+#ifndef NEEDED_DEFINE
+#error need define
+#endif
+
 #include <stdio.h>
 #include <test1.h>
 

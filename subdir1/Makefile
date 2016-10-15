@@ -9,8 +9,14 @@ test5-libs = $(builddir)/../subdir2/libfoo.a
 subdir = subdir2
 built-sources = sven/katt.S nils/gen.c
 
+define phony-c-file
+#ifndef NEEDED_DEFINE
+#error need define
+#endif
+endef
+
 $(builddir)/nils/gen.c : $(srcdir)/Makefile
-	$(gen)touch $@
+	$(gen)echo "$(subst $(newline),;,$(call phony-c-file))" | tr ";" "\n" > $@
 
 $(builddir)/sven/katt.S : $(srcdir)/Makefile
 	$(gen)touch $@
