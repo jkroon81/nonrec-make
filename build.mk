@@ -257,7 +257,11 @@ print-%: ; $(q)echo $*=$($*)
 print-data-base :
 	$(q)$(MAKE) -f $(init-srcdir)/Makefile -pq || true
 
-.PHONY : all asm clean distclean cpp print-% print-data-base
+print-variables :
+	$(foreach v,$(sort $(.VARIABLES)),$(info $v=$(value $v)))
+	$(q)true
+
+.PHONY : all asm clean distclean cpp print-% print-data-base print-variables
 
 endif
 endif
