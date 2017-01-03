@@ -191,8 +191,8 @@ $$(foreach s,$$(built-sources),$$(eval $$(builddir)/$$s : \
   | $$(call bpath,$$s/..)))
 $$(foreach b,$$(bin),$$(eval $$(call add-bin,$$b)))
 $$(foreach l,$$(lib),$$(eval $$(call add-lib,$$l)))
-$$(eval $$(builddir)-cleanfiles := $$(cleanfiles))
-$$(eval $$(builddir)-distcleanfiles := $$(distcleanfiles))
+$$(eval $$(call tflags,.,cleanfiles) := $$(cleanfiles))
+$$(eval $$(call tflags,.,distcleanfiles) := $$(distcleanfiles))
 all : $$(builddir)/Makefile
 $$(builddir)/Makefile : | $$(builddir)
 	$$(gen)echo "$$(subst $$(newline),;,$$(call gen-makefile,$(call relpath,$(builddir),$(srcdir)),$(call relpath,$(srcdir),$(builddir))))" \
@@ -200,11 +200,11 @@ $$(builddir)/Makefile : | $$(builddir)
 .PHONY : _clean-$$(builddir)
 clean : _clean-$$(builddir)
 _clean-$$(builddir) :
-	$$(clean) $$($$(@:_clean-%=%)-cleanfiles)
+	$$(clean) $$(_$$(@:_clean-%=%)-cleanfiles)
 .PHONY : _distclean-$$(builddir)
 distclean : _distclean-$$(builddir)
 _distclean-$$(builddir) : _clean-$$(builddir)
-	$$(distclean) $$($$(@:_distclean-%=%)-distcleanfiles)
+	$$(distclean) $$(_$$(@:_distclean-%=%)-distcleanfiles)
 $$(foreach s,$$(subdir),$$(eval $$(call prep-for-subdir,$(if $1,$1/)$$s)) \
                         $$(eval $$(call add-subdir,$(if $1,$1/)$$s)))
 undefine srcdir
