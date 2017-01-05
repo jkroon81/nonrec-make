@@ -1,5 +1,6 @@
 *.[abdios]
 *~
+*.exe
 *.swp
 Makefile
 !/Makefile
