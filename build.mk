@@ -6,7 +6,9 @@ abs-top-srcdir := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 top-srcdir := $(call relpath,$(abs-top-srcdir))
 abs-init-srcdir := $(abspath $(dir $(firstword $(MAKEFILE_LIST))))
 init-srcdir := $(call relpath,$(abs-init-srcdir))
-abs-top-builddir := $(abspath $O)
+abs-init-builddir := $(abspath $O)
+init-builddir := $(call relpath,$(abs-init-builddir))
+abs-top-builddir := $(abspath $(init-builddir)/$(call relpath,$(top-srcdir),$(init-srcdir)))
 top-builddir := $(call relpath,$(abs-top-builddir))
 flags := env asflags ccflags ldflags
 fragments := $(wildcard $(addprefix $(top-srcdir)/config/,\
@@ -37,7 +39,6 @@ $(target) :
 	$(q)$(if $(__build-env),. $(__build-env) && )$(MAKE) -C $O \
 	  -f $(call relpath,$(init-srcdir)/Makefile,$O) \
 	  $(filter-out _target,$@) O=. second-make=1 __build-env= \
-	  top-builddir=$(call relpath,$(top-srcdir),$(init-srcdir)) \
 	  builddir=. srcdir=$(call relpath,$(init-srcdir),$O)
 else
 .DEFAULT_GOAL := all
@@ -195,8 +196,9 @@ $$(eval $$(call tflags,.,cleanfiles) := $$(cleanfiles))
 $$(eval $$(call tflags,.,distcleanfiles) := $$(distcleanfiles))
 all : $$(builddir)/Makefile
 $$(builddir)/Makefile : | $$(builddir)
-	$$(gen)echo "$$(subst $$(newline),;,$$(call gen-makefile,$(call relpath,$(srcdir),$(builddir)),$(call relpath,$(builddir),$(srcdir))))" \
-	| tr ";" "\n" > $$@
+	$$(gen)echo "$$(subst $$(newline),;, \
+	  $$(call gen-makefile,$(call relpath,$(srcdir),$(builddir))))" \
+	  | tr ";" "\n" > $$@
 .PHONY : _clean-$$(builddir)
 clean : _clean-$$(builddir)
 _clean-$$(builddir) :
@@ -226,7 +228,7 @@ target := \$$(or \$$(MAKECMDGOALS),_target)
 .DEFAULT_GOAL := \$$(target)
 .PHONY : \$$(target)
 \$$(target) :
-	@\$$(MAKE) -C $1 \$$(filter-out _target,\$$@) O=$2 abs-top-builddir=$(abs-top-builddir)
+	@\$$(MAKE) -f $1/Makefile \$$(filter-out _target,\$$@)
 endef
 
 parse-build := 1
