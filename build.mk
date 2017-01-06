@@ -1,13 +1,13 @@
 ifndef parse-build
 O ?= .
 MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
-relpath = $(shell realpath -m --relative-to $1 $2)
+relpath = $(shell realpath -m --relative-to $(if $2,$2,.) $1)
 abs-top-srcdir := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-top-srcdir := $(call relpath,.,$(abs-top-srcdir))
+top-srcdir := $(call relpath,$(abs-top-srcdir))
 abs-init-srcdir := $(abspath $(dir $(firstword $(MAKEFILE_LIST))))
-init-srcdir := $(call relpath,.,$(abs-init-srcdir))
+init-srcdir := $(call relpath,$(abs-init-srcdir))
 abs-top-builddir := $(abspath $O)
-top-builddir := $(call relpath,.,$(abs-top-builddir))
+top-builddir := $(call relpath,$(abs-top-builddir))
 flags := env asflags ccflags ldflags
 fragments := $(wildcard $(addprefix $(top-srcdir)/config/,\
   $(filter-out . ..,$(subst -, ,$(notdir $(abs-top-builddir))))))
@@ -35,10 +35,10 @@ target := $(or $(MAKECMDGOALS),_target)
 .PHONY : $(target)
 $(target) :
 	$(q)$(if $(__build-env),. $(__build-env) && )$(MAKE) -C $O \
-	  -f $(call relpath,$O,$(init-srcdir)/Makefile) \
+	  -f $(call relpath,$(init-srcdir)/Makefile,$O) \
 	  $(filter-out _target,$@) O=. second-make=1 __build-env= \
-	  top-builddir=$(call relpath,$(init-srcdir),$(top-srcdir)) \
-	  builddir=. srcdir=$(call relpath,$O,$(init-srcdir))
+	  top-builddir=$(call relpath,$(top-srcdir),$(init-srcdir)) \
+	  builddir=. srcdir=$(call relpath,$(init-srcdir),$O)
 else
 .DEFAULT_GOAL := all
 objs :=
@@ -195,7 +195,7 @@ $$(eval $$(call tflags,.,cleanfiles) := $$(cleanfiles))
 $$(eval $$(call tflags,.,distcleanfiles) := $$(distcleanfiles))
 all : $$(builddir)/Makefile
 $$(builddir)/Makefile : | $$(builddir)
-	$$(gen)echo "$$(subst $$(newline),;,$$(call gen-makefile,$(call relpath,$(builddir),$(srcdir)),$(call relpath,$(srcdir),$(builddir))))" \
+	$$(gen)echo "$$(subst $$(newline),;,$$(call gen-makefile,$(call relpath,$(srcdir),$(builddir)),$(call relpath,$(builddir),$(srcdir))))" \
 	| tr ";" "\n" > $$@
 .PHONY : _clean-$$(builddir)
 clean : _clean-$$(builddir)
