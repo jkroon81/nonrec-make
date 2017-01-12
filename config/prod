@@ -1,1 +1,1 @@
-ccflags = -O2
+ccflags := -O2

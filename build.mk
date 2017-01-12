@@ -39,7 +39,10 @@ $(target) :
 	$(q)$(if $(__build-env),. $(__build-env) && )$(MAKE) -C $O \
 	  -f $(call relpath,$(init-srcdir)/Makefile,$O) \
 	  $(filter-out _target,$@) O=. second-make=1 __build-env= \
-	  builddir=. srcdir=$(call relpath,$(init-srcdir),$O)
+	  top-srcdir=$(call relpath,$(abs-top-srcdir),$O) \
+	  srcdir=$(call relpath,$(init-srcdir),$O) \
+	  top-builddir=$(call relpath,$(abs-top-builddir),$O) \
+	  builddir=$(call relpath,$(init-builddir),$O)
 else
 .DEFAULT_GOAL := all
 objs :=
