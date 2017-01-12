@@ -6,7 +6,6 @@ kalle/puh.S-asflags := --reduce-memory-overheads
 test5-sources := main5.c nils/gen.c
 test5-ccflags := -I$(srcdir)/../subdir2
 test5-libs := $(builddir)/../subdir2/libfoo.a
-subdir := subdir2
 built-sources := sven/katt.S nils/gen.c
 
 define phony-c-file

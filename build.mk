@@ -179,6 +179,7 @@ bin :=
 lib :=
 subdir :=
 built-sources :=
+is-gen-makefile :=
 include $$(srcdir)/Makefile
 endef
 
@@ -187,7 +188,9 @@ $(if $1,mkdirs := $1 $(mkdirs))
 $$(eval $$(call tflags,.,makefile-deps) := \
   $(if $1,,$(top-srcdir)/build.mk $(fragments)) \
   $$($$(call tflags,..,makefile-deps)) $$(call spath,Makefile))
-subdir := $$(patsubst %/,%,$$(subdir))
+subdir := $$(if $$(subdir), \
+  $$(patsubst %/,%,$$(subdir)), \
+  $$(notdir $$(patsubst %/,%,$$(dir $$(wildcard $$(srcdir)/*/Makefile)))))
 cleanfiles += $$(addprefix $$(builddir)/,$$(built-sources))
 $$(if $$(filter $$(builddir),$$(srcdir)),, \
   $$(eval distcleanfiles += $$(call bpath,Makefile)))
@@ -211,7 +214,7 @@ distclean : _distclean-$$(builddir)
 _distclean-$$(builddir) : _clean-$$(builddir)
 	$$(distclean) $$(_$$(@:_distclean-%=%)-distcleanfiles)
 $$(foreach s,$$(subdir),$$(eval $$(call prep-for-subdir,$(if $1,$1/)$$s)) \
-                        $$(eval $$(call add-subdir,$(if $1,$1/)$$s)))
+                        $$(if $$(is-gen-makefile),,$$(eval $$(call add-subdir,$(if $1,$1/)$$s))))
 undefine srcdir
 undefine builddir
 undefine cleanfiles
@@ -220,18 +223,22 @@ undefine bin
 undefine lib
 undefine subdir
 undefine built-sources
+undefine is-gen-makefile
 undefine asflags
 undefine ccflags
 undefine ldflags
 endef
 
 define gen-makefile
+is-gen-makefile := 1
+ifndef parse-build
 MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
 target := \$$(or \$$(MAKECMDGOALS),_target)
 .DEFAULT_GOAL := \$$(target)
 .PHONY : \$$(target)
 \$$(target) :
 	@\$$(MAKE) -f $1/Makefile \$$(filter-out _target,\$$@)
+endif
 endef
 
 parse-build := 1
