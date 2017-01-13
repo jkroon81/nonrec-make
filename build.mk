@@ -167,7 +167,7 @@ $(eval $(call add-bin-lib-common,$1))
 $(builddir)/$1 :
 	$$(q)rm -f $$@
 	$$(ar) crD $$@ $$(_$$@-objs)
-	$$(ranlib) $$@
+	$$(ranlib) -D $$@
 endef
 
 define prep-for-subdir
