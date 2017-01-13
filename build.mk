@@ -14,6 +14,12 @@ flags := env asflags ccflags ldflags
 fragments := $(wildcard $(addprefix $(top-srcdir)/config/,\
   $(filter-out . ..,$(subst -, ,$(notdir $(abs-top-builddir))))))
 
+ifneq ($O,.)
+ifneq ($(init-builddir),$(top-builddir))
+$(error Out-of-tree build only supported from top build directory)
+endif
+endif
+
 define capture-flags
 $(foreach v,$1,$(eval $v :=))
 $(foreach f,$2,$(eval -include $f))
