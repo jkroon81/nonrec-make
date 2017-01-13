@@ -31,18 +31,18 @@ q-  = $(q-$(default-v))
 q   = $(q-$(V))
 
 ifndef second-make
-$(eval $(shell mkdir -p $O))
+$(eval $(shell mkdir -p $(top-builddir)))
 target := $(or $(MAKECMDGOALS),_target)
 .DEFAULT_GOAL := $(target)
 .PHONY : $(target)
 $(target) :
-	$(q)$(if $(__build-env),. $(__build-env) && )$(MAKE) -C $O \
-	  -f $(call relpath,$(init-srcdir)/Makefile,$O) \
+	$(q)$(if $(__build-env),. $(__build-env) && )$(MAKE) -C $(top-builddir) \
+	  -f $(call relpath,$(init-srcdir)/Makefile,$(top-builddir)) \
 	  $(filter-out _target,$@) O=. second-make=1 __build-env= \
-	  top-srcdir=$(call relpath,$(abs-top-srcdir),$O) \
-	  srcdir=$(call relpath,$(init-srcdir),$O) \
-	  top-builddir=$(call relpath,$(abs-top-builddir),$O) \
-	  builddir=$(call relpath,$(init-builddir),$O)
+	  top-srcdir=$(call relpath,$(abs-top-srcdir),$(top-builddir)) \
+	  srcdir=$(call relpath,$(init-srcdir),$(top-builddir)) \
+	  top-builddir=$(call relpath,$(abs-top-builddir),$(top-builddir)) \
+	  builddir=$(call relpath,$(init-builddir),$(top-builddir))
 else
 .DEFAULT_GOAL := all
 objs :=
@@ -57,8 +57,8 @@ npath = $(if $(filter $(CURDIR)%,$(abspath $1)),$(patsubst /%,%,$(patsubst \
 tflags = _$(or $(call bpath,$1),.)-$2
 prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
 
-vpath %.c $(init-srcdir)
-vpath %.S $(init-srcdir)
+vpath %.c $(top-srcdir)
+vpath %.S $(top-srcdir)
 
 define add-cmd
 $2-0 = @echo "$1$4";
@@ -171,7 +171,7 @@ $(builddir)/$1 :
 endef
 
 define prep-for-subdir
-override srcdir := $(patsubst ./%,%,$(init-srcdir)/$1)
+override srcdir := $(patsubst ./%,%,$(top-srcdir)/$1)
 override builddir := $1
 cleanfiles :=
 distcleanfiles :=
@@ -244,7 +244,7 @@ endef
 parse-build := 1
 srcdir := $(init-srcdir)
 builddir := .
-$(eval $(call add-subdir,))
+$(eval $(call add-subdir,$(filter-out .,$(call relpath,$(init-srcdir),$(top-srcdir)))))
 
 $(mkdirs) :
 	$(q)mkdir -p $@
