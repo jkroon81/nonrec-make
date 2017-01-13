@@ -26,7 +26,9 @@ function test_makefiles {
     for f in $makefiles; do
         pushd . > /dev/null
         cd `dirname $f`
+        echo "make clean, PWD=$PWD"
         make clean
+        echo "make, PWD=$PWD"
         make
         check_arch $1
         popd > /dev/null
@@ -34,18 +36,22 @@ function test_makefiles {
 }
 
 function test_build {
+    echo "make O=$1, PWD=$PWD"
     make O=$1
     pushd . > /dev/null
     cd $1
     test_makefiles $2
+    echo "make distclean, PWD=$PWD"
     make distclean
     popd > /dev/null
     if [ "$1" != "." ]; then rmdir $1; fi
     pushd . > /dev/null
     mkdir -p $1
     cd $1
+    echo "make -f `dirs -0`/Makefile, PWD=$PWD"
     make -f `dirs -0`/Makefile
     test_makefiles $2
+    echo "make distclean, PWD=$PWD"
     make distclean
     popd > /dev/null
     if [ "$1" != "." ]; then rmdir $1; fi
