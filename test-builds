@@ -1,12 +1,35 @@
 #!/bin/sh
 set -e
 
+checksum_find_arg=
+
+while getopts ":adox" opt; do
+    case $opt in
+        a)
+        checksum_find_arg+="-a -not -name '*.a' "
+        ;;
+        d)
+        checksum_find_arg+="-a -not -name '*.d' "
+        ;;
+        o)
+        checksum_find_arg+="-a -not -name '*.o' "
+        ;;
+        x)
+        checksum_find_arg+="-a -not -executable "
+        ;;
+        ?)
+        echo "Invalid option: -$OPTARG" >&2
+        exit 1
+    esac
+done
+
 git clean -dxf
 
 export MAKEFLAGS=-j8
 
 nocf=0
 noff=0
+trap "if [ -e \"\$checksum_file\" ]; then rm \$checksum_file; fi" EXIT
 
 function check_arch {
     files=$(find . -not -path './.git/*' -a -not -name test-builds -a \
@@ -32,15 +55,27 @@ function test_makefiles {
         make
         check_arch $1
         popd > /dev/null
+        if [ -n "$2" ]; then
+            sha256sum --check --quiet $2;
+        fi
     done
 }
 
 function test_build {
     echo "make O=$1, PWD=$PWD"
     make O=$1
+    if [ "$1" == "." ]; then
+        checksum_file=
+    else
+        checksum_file=`mktemp`
+        pushd . > /dev/null
+        cd $1
+        eval find -type f $checksum_find_arg | xargs sha256sum > $checksum_file
+        popd > /dev/null
+    fi
     pushd . > /dev/null
     cd $1
-    test_makefiles $2
+    test_makefiles $2 $checksum_file
     echo "make distclean, PWD=$PWD"
     make distclean
     popd > /dev/null
@@ -50,11 +85,12 @@ function test_build {
     cd $1
     echo "make -f `dirs -0`/Makefile, PWD=$PWD"
     make -f `dirs -0`/Makefile
-    test_makefiles $2
+    test_makefiles $2 $checksum_file
     echo "make distclean, PWD=$PWD"
     make distclean
     popd > /dev/null
     if [ "$1" != "." ]; then rmdir $1; fi
+    if [ -e "$checksum_file" ]; then rm $checksum_file; fi
 }
 
 test_build . x86-64
