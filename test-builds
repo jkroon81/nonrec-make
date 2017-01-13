@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-checksum_find_arg=
+checksum_find_arg="-a -not -path '*/.git/*' "
 
 while getopts ":adox" opt; do
     case $opt in
@@ -55,26 +55,17 @@ function test_makefiles {
         make
         check_arch $1
         popd > /dev/null
-        if [ -n "$2" ]; then
-            sha256sum --check --quiet $2;
-        fi
+        sha256sum --check --quiet $2
     done
 }
 
 function test_build {
     echo "make O=$1, PWD=$PWD"
     make O=$1
-    if [ "$1" == "." ]; then
-        checksum_file=
-    else
-        checksum_file=`mktemp`
-        pushd . > /dev/null
-        cd $1
-        eval find -type f $checksum_find_arg | xargs sha256sum > $checksum_file
-        popd > /dev/null
-    fi
+    checksum_file=`mktemp`
     pushd . > /dev/null
     cd $1
+    eval find -type f $checksum_find_arg | xargs sha256sum > $checksum_file
     test_makefiles $2 $checksum_file
     echo "make distclean, PWD=$PWD"
     make distclean
@@ -90,7 +81,7 @@ function test_build {
     make distclean
     popd > /dev/null
     if [ "$1" != "." ]; then rmdir $1; fi
-    if [ -e "$checksum_file" ]; then rm $checksum_file; fi
+    rm $checksum_file
 }
 
 test_build . x86-64
