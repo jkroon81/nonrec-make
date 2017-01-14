@@ -16,7 +16,7 @@ $(if $(filter $(init-builddir),.)$(filter $(init-builddir),$(top-builddir)),, \
 )
 
 flags := env asflags ccflags ldflags
-fragments := $(wildcard $(addprefix $(top-srcdir)/config/,\
+configs := $(wildcard $(addprefix $(top-srcdir)/config/,\
   $(filter-out . ..,$(subst -, ,$(notdir $(abs-top-builddir))))))
 
 define capture-flags
@@ -26,13 +26,13 @@ $(foreach v,$1,$(eval $3-$v := $($v)))
 $(foreach v,$1,$(eval undefine $v))
 endef
 
-$(eval $(call capture-flags,$(flags),$(top-srcdir)/common.mk,__common))
-$(eval $(call capture-flags,$(flags),$(fragments),__build))
+$(eval $(call capture-flags,$(flags),$(top-srcdir)/common.mk,common))
+$(eval $(call capture-flags,$(flags),$(configs),config))
 
-default-v := 0
+default-V := 0
 
 q-0 = @
-q-  = $(q-$(default-v))
+q-  = $(q-$(default-V))
 q   = $(q-$(V))
 
 ifndef second-make
@@ -41,9 +41,9 @@ target := $(or $(MAKECMDGOALS),_target)
 .DEFAULT_GOAL := $(target)
 .PHONY : $(target)
 $(target) :
-	$(q)$(if $(__build-env),. $(__build-env) && )$(MAKE) -C $(top-builddir) \
+	$(q)$(if $(config-env),. $(config-env) && )$(MAKE) -C $(top-builddir) \
 	  -f $(call relpath,$(init-srcdir)/Makefile,$(top-builddir)) \
-	  $(filter-out _target,$@) O=. second-make=1 __build-env= \
+	  $(filter-out _target,$@) O=. second-make=1 config-env= \
 	  top-srcdir=$(call relpath,$(abs-top-srcdir),$(top-builddir)) \
 	  srcdir=$(call relpath,$(init-srcdir),$(top-builddir)) \
 	  top-builddir=$(call relpath,$(abs-top-builddir),$(top-builddir)) \
@@ -67,7 +67,7 @@ vpath %.S $(top-srcdir)
 
 define add-cmd
 $2-0 = @echo "$1$4";
-$2-  = $$($2-$(default-v))
+$2-  = $$($2-$(default-V))
 $2   = $$($2-$(V))$(strip $3)
 endef
 
@@ -121,8 +121,8 @@ define add-source
 $(if $(filter $(call bpath,$2.o),$(objs)),$(error Multiple $(call bpath,$2.o)))
 objs += $(call bpath,$2.o)
 $(eval $(call tflags,$2.o,$($3-flags-var)) := \
-  $(__common-$($3-flags-var)) \
-  $(__build-$($3-flags-var)) \
+  $(common-$($3-flags-var)) \
+  $(config-$($3-flags-var)) \
   $($($3-flags-var)) \
   $($1-$($3-flags-var)) \
   $($2$3-$($3-flags-var)) \
@@ -157,8 +157,8 @@ endef
 define add-bin
 $(eval $(call add-bin-lib-common,$1))
 $(eval $(call tflags,$1,ldflags) := \
-  $(__common-ldflags) \
-  $(__build-ldflags) \
+  $(common-ldflags) \
+  $(config-ldflags) \
   $(ldflags) \
   $($1-ldflags) \
   $(LDFLAGS) \
@@ -191,7 +191,7 @@ endef
 define add-subdir
 $(if $1,mkdirs := $1 $(mkdirs))
 $$(eval $$(call tflags,.,makefile-deps) := \
-  $(if $1,,$(top-srcdir)/build.mk $(fragments)) \
+  $(if $1,,$(top-srcdir)/build.mk $(configs)) \
   $$($$(call tflags,..,makefile-deps)) $$(call spath,Makefile))
 subdir := $$(if $$(subdir), \
   $$(patsubst %/,%,$$(subdir)), \
@@ -247,8 +247,6 @@ endif
 endef
 
 parse-build := 1
-srcdir := $(init-srcdir)
-builddir := .
 $(eval $(call add-subdir,$(filter-out .,$(call relpath,$(init-srcdir),$(top-srcdir)))))
 
 $(mkdirs) :
