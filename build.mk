@@ -10,15 +10,14 @@ abs-init-builddir := $(abspath $O)
 init-builddir := $(call relpath,$(abs-init-builddir))
 abs-top-builddir := $(abspath $(init-builddir)/$(call relpath,$(top-srcdir),$(init-srcdir)))
 top-builddir := $(call relpath,$(abs-top-builddir))
+
+$(if $(filter $(init-builddir),.)$(filter $(init-builddir),$(top-builddir)),, \
+  $(error Out-of-tree build only supported from top build directory) \
+)
+
 flags := env asflags ccflags ldflags
 fragments := $(wildcard $(addprefix $(top-srcdir)/config/,\
   $(filter-out . ..,$(subst -, ,$(notdir $(abs-top-builddir))))))
-
-ifneq ($O,.)
-ifneq ($(init-builddir),$(top-builddir))
-$(error Out-of-tree build only supported from top build directory)
-endif
-endif
 
 define capture-flags
 $(foreach v,$1,$(eval $v :=))
