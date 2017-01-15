@@ -1,7 +1,14 @@
 ifndef parse-build
 O ?= .
 MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
-relpath = $(shell realpath -m --relative-to $(if $2,$2,.) $1)
+parent = $(patsubst %/$(lastword $(subst /, ,$1)),%,$1)
+anc = $(if $(or $(patsubst $3/%,,$1/),$(patsubst $3/%,,$2/)),$(call anc,$1,$2,$(call parent,$3)),$3)
+space :=
+space +=
+down-path = $(if $(filter $(call anc,$1,$2,$1),$3),,$(patsubst $(call anc,$1,$2,$1)/%,%,$3))
+up-path = $(subst $(space),,$(patsubst %,../,$(subst /, ,$(call down-path,$1,$2,$3))))
+relpath-calc = $(or $(patsubst %/,%,$(call up-path,$1,$2,$2)$(call down-path,$1,$2,$1)),.)
+relpath = $(call relpath-calc,$(abspath $1),$(abspath $(if $2,$2,.)))
 abs-top-srcdir := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 top-srcdir := $(call relpath,$(abs-top-srcdir))
 abs-init-srcdir := $(abspath $(dir $(firstword $(MAKEFILE_LIST))))
