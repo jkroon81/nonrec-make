@@ -31,6 +31,15 @@ nocf=0
 noff=0
 trap "if [ -e \"\$checksum_file\" ]; then rm \$checksum_file; fi" EXIT
 
+function patch_exe {
+    php_offset=$((0x3c))
+    ph_offset=0x$(dd if=$1 conv=swab bs=1 count=2 skip=$php_offset status=none | xxd -p | sed 's/^0*//')
+    timestamp_offset=$(($ph_offset + 8))
+    checksum_offset=$(($ph_offset + 88))
+    dd if=/dev/zero of=$1 bs=1 count=4 seek=$timestamp_offset status=none conv=notrunc
+    dd if=/dev/zero of=$1 bs=1 count=4 seek=$checksum_offset status=none conv=notrunc
+}
+
 function check_arch {
     files=$(find . -not -path './.git/*' -a -not -name test-builds -a \
                  \( -name "*.o" -o -executable -type f \) )
@@ -54,6 +63,7 @@ function test_makefiles {
         echo "make, PWD=$PWD"
         make
         check_arch $1
+        for exe in `find -name '*.exe'`; do patch_exe $exe; done
         popd > /dev/null
         sha256sum --check --quiet $2
     done
@@ -65,6 +75,7 @@ function test_build {
     checksum_file=`mktemp`
     pushd . > /dev/null
     cd $1
+    for exe in `find -name '*.exe'`; do patch_exe $exe; done
     eval find -type f $checksum_find_arg | xargs sha256sum > $checksum_file
     test_makefiles $2 $checksum_file
     echo "make distclean, PWD=$PWD"
