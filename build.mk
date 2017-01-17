@@ -43,6 +43,7 @@ q-  = $(q-$(default-V))
 q   = $(q-$(V))
 
 ifndef second-make
+.NOTPARALLEL :
 $(eval $(shell mkdir -p $(top-builddir)))
 target := $(or $(MAKECMDGOALS),_target)
 .DEFAULT_GOAL := $(target)
@@ -244,6 +245,7 @@ endef
 define gen-makefile
 is-gen-makefile := 1
 ifndef parse-build
+.NOTPARALLEL :
 MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
 target := \$$(or \$$(MAKECMDGOALS),_target)
 .DEFAULT_GOAL := \$$(target)
