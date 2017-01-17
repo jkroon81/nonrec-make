@@ -43,15 +43,16 @@ q-  = $(q-$(default-V))
 q   = $(q-$(V))
 
 ifndef second-make
-.NOTPARALLEL :
 $(eval $(shell mkdir -p $(top-builddir)))
-target := $(or $(MAKECMDGOALS),_target)
-.DEFAULT_GOAL := $(target)
-.PHONY : $(target)
-$(target) :
+targets := $(or $(MAKECMDGOALS),_target)
+.DEFAULT_GOAL := $(targets)
+.PHONY : $(targets)
+$(wordlist 2,$(words $(targets)),$(targets)) :
+	$(q)true
+$(firstword $(targets)) :
 	$(q)$(if $(config-env),. $(config-env) && )$(MAKE) -C $(top-builddir) \
 	  -f $(call relpath,$(init-srcdir)/Makefile,$(top-builddir)) \
-	  $(filter-out _target,$@) O=. second-make=1 config-env= \
+	  $(MAKECMDGOALS) O=. second-make=1 config-env= \
 	  top-srcdir=$(call relpath,$(abs-top-srcdir),$(top-builddir)) \
 	  srcdir=$(call relpath,$(init-srcdir),$(top-builddir)) \
 	  top-builddir=$(call relpath,$(abs-top-builddir),$(top-builddir)) \
@@ -245,13 +246,14 @@ endef
 define gen-makefile
 is-gen-makefile := 1
 ifndef parse-build
-.NOTPARALLEL :
 MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
-target := \$$(or \$$(MAKECMDGOALS),_target)
-.DEFAULT_GOAL := \$$(target)
-.PHONY : \$$(target)
-\$$(target) :
-	@\$$(MAKE) -f $1/Makefile \$$(filter-out _target,\$$@)
+targets := \$$(or \$$(MAKECMDGOALS),_target)
+.DEFAULT_GOAL := \$$(targets)
+.PHONY : \$$(targets)
+\$$(wordlist 2,\$$(words \$$(targets)),\$$(targets)) :
+	@true
+\$$(firstword \$$(targets)) :
+	@\$$(MAKE) -f $1/Makefile \$$(MAKECMDGOALS)
 endif
 endef
 
