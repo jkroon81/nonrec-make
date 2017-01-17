@@ -1,4 +1,5 @@
 ifndef parse-build
+startup-variables := $(.VARIABLES) startup-variables
 O ?= .
 MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
 parent = $(patsubst %/$(lastword $(subst /, ,$1)),%,$1)
@@ -283,9 +284,14 @@ print-%: ; $(q)echo $*=$($*)
 print-data-base :
 	$(q)$(MAKE) -f $(init-srcdir)/Makefile -pq || true
 
+variable-list-0 = $(filter-out $(startup-variables),$(.VARIABLES))
+variable-list-1 = $(.VARIABLES)
+variable-list-  = $(variable-list-$(default-V))
+variable-list   = $(variable-list-$(V))
+
 print-variables :
-	$(foreach v,$(sort $(.VARIABLES)),$(info $v=$(value $v)))
-	$(q)true
+	$(foreach v,$(sort $(variable-list)),$(info $v=$(value $v)))
+	@true
 
 .PHONY : all asm clean distclean cpp print-% print-data-base print-variables
 
