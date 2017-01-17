@@ -33,6 +33,8 @@ nocf=0
 noff=0
 trap "if [ -e \"\$checksum_file\" ]; then rm \$checksum_file; fi" EXIT
 
+targets="all asm cpp objdump"
+
 function patch_exe {
     php_offset=$((0x3c))
     ph_offset=0x$(dd if=$1 conv=swab bs=1 count=2 skip=$php_offset status=none | xxd -p | sed 's/^0*//')
@@ -62,8 +64,8 @@ function test_makefiles {
         cd `dirname $f`
         echo "make clean, PWD=$PWD"
         make clean
-        echo "make, PWD=$PWD"
-        make
+        echo "make $targets, PWD=$PWD"
+        make $targets
         check_arch $1
         for exe in `find -name '*.exe'`; do patch_exe $exe; done
         popd > /dev/null
@@ -72,8 +74,8 @@ function test_makefiles {
 }
 
 function test_build {
-    echo "make O=$1, PWD=$PWD"
-    make O=$1
+    echo "make $targets O=$1, PWD=$PWD"
+    make $targets O=$1
     checksum_file=`mktemp`
     pushd . > /dev/null
     cd $1
@@ -87,8 +89,8 @@ function test_build {
     pushd . > /dev/null
     mkdir -p $1
     cd $1
-    echo "make -f `dirs -0`/Makefile, PWD=$PWD"
-    make -f `dirs -0`/Makefile
+    echo "make $targets -f `dirs -0`/Makefile, PWD=$PWD"
+    make $targets -f `dirs -0`/Makefile
     test_makefiles $2 $checksum_file
     echo "make distclean, PWD=$PWD"
     make distclean
