@@ -103,6 +103,8 @@ test_build . x86-64
 test_build build x86-64
 if [ -e $(eval echo $(make O=build-oe -pq 2> /dev/null | grep -oP 'config-env := \K.*')) ]; then
     test_build build-oe ARM
+else
+    rmdir build-oe
 fi
 
 if [ $noff -ne 0 ]; then
