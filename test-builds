@@ -30,7 +30,6 @@ done
 git clean -dxf
 
 nocf=0
-noff=0
 trap "if [ -e \"\$checksum_file\" ]; then rm \$checksum_file; fi" EXIT
 
 targets="all asm cpp objdump"
@@ -49,10 +48,10 @@ function check_arch {
                  \( -name "*.o" -o -executable -type f \) )
     for f in $files; do
 	let nocf=nocf+1
-	arch=$(file $f | cut -f 2 -d , | tr -d " ")
-	if [ "$arch" != "$1" ]; then
-	    let noff=noff+1
-	    echo "ERROR: $f \"$arch\" != \"$1\""
+	arch=$($1 -f $f | grep -oP "architecture: \K.*" | cut -f1 -d,)
+	if [ "$arch" != "$2" ]; then
+	    echo "ERROR: $f \"$arch\" != \"$2\""
+	    exit 1
 	fi
     done
 }
@@ -66,10 +65,10 @@ function test_makefiles {
         make clean
         echo "make $targets, PWD=$PWD"
         make $targets
-        check_arch $1
+        check_arch $1 $2
         for exe in `find -name '*.exe'`; do patch_exe $exe; done
         popd > /dev/null
-        sha256sum --check --quiet $2
+        sha256sum --check --quiet $3
     done
 }
 
@@ -81,7 +80,7 @@ function test_build {
     cd $1
     for exe in `find -name '*.exe'`; do patch_exe $exe; done
     eval find -type f $checksum_find_arg | xargs sha256sum > $checksum_file
-    test_makefiles $2 $checksum_file
+    test_makefiles $2 $3 $checksum_file
     echo "make distclean, PWD=$PWD"
     make distclean
     popd > /dev/null
@@ -91,7 +90,7 @@ function test_build {
     cd $1
     echo "make $targets -f `dirs -0`/Makefile, PWD=$PWD"
     make $targets -f `dirs -0`/Makefile
-    test_makefiles $2 $checksum_file
+    test_makefiles $2 $3 $checksum_file
     echo "make distclean, PWD=$PWD"
     make distclean
     popd > /dev/null
@@ -99,19 +98,16 @@ function test_build {
     rm $checksum_file
 }
 
-test_build . x86-64
-test_build build x86-64
-if [ -e $(eval echo $(make O=build-oe -pq 2> /dev/null | grep -oP 'config-env := \K.*')) ]; then
-    test_build build-oe ARM
+test_build . objdump i386:x86-64
+test_build build objdump i386:x86-64
+build_oe_env=$(eval echo $(make O=build-oe -pq 2> /dev/null | grep -oP 'config-env := \K.*'))
+if [ -e $build_oe_env ]; then
+    test_build build-oe $(. $build_oe_env && which $OBJDUMP) arm
 else
     rmdir build-oe
 fi
 
-if [ $noff -ne 0 ]; then
-    echo "$noff/$nocf files with incorrect arch"
-else
-    echo "All $nocf files OK"
-fi
+echo "All $nocf files OK"
 
 cruft=`git ls-files --others`
 if [ -n "$cruft" ]; then
