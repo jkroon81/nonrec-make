@@ -33,6 +33,11 @@ nocf=0
 trap "if [ -e \"\$checksum_file\" ]; then rm \$checksum_file; fi" EXIT
 
 targets="all asm cpp objdump"
+top_testdir=$PWD
+
+function curdir {
+    realpath -m --relative-to $top_testdir $PWD
+}
 
 function patch_exe {
     php_offset=$((0x3c))
@@ -61,9 +66,9 @@ function test_makefiles {
     for f in $makefiles; do
         pushd . > /dev/null
         cd `dirname $f`
-        echo "make clean, PWD=$PWD"
+        echo "make clean, PWD=$(curdir $PWD)"
         make clean
-        echo "make $targets, PWD=$PWD"
+        echo "make $targets, PWD=$(curdir $PWD)"
         make $targets
         check_arch $1 $2
         for exe in `find -name '*.exe'`; do patch_exe $exe; done
@@ -73,7 +78,7 @@ function test_makefiles {
 }
 
 function test_build {
-    echo "make $targets O=$1, PWD=$PWD"
+    echo "make $targets O=$1, PWD=$(curdir $PWD)"
     make $targets O=$1
     checksum_file=`mktemp`
     pushd . > /dev/null
@@ -81,17 +86,17 @@ function test_build {
     for exe in `find -name '*.exe'`; do patch_exe $exe; done
     eval find -type f $checksum_find_arg | xargs sha256sum > $checksum_file
     test_makefiles $2 $3 $checksum_file
-    echo "make distclean, PWD=$PWD"
+    echo "make distclean, PWD=$(curdir PWD)"
     make distclean
     popd > /dev/null
     if [ "$1" != "." ]; then rmdir $1; fi
     pushd . > /dev/null
     mkdir -p $1
     cd $1
-    echo "make $targets -f `dirs -0`/Makefile, PWD=$PWD"
+    echo "make $targets -f `dirs -0`/Makefile, PWD=$(curdir $PWD)"
     make $targets -f `dirs -0`/Makefile
     test_makefiles $2 $3 $checksum_file
-    echo "make distclean, PWD=$PWD"
+    echo "make distclean, PWD=$(curdir $PWD)"
     make distclean
     popd > /dev/null
     if [ "$1" != "." ]; then rmdir $1; fi
