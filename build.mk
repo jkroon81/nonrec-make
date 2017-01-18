@@ -44,13 +44,12 @@ q-  = $(q-$(default-V))
 q   = $(q-$(V))
 
 ifndef second-make
-$(eval $(shell mkdir -p $(top-builddir)))
 targets := $(or $(MAKECMDGOALS),_target)
 .DEFAULT_GOAL := $(targets)
 .PHONY : $(targets)
 $(wordlist 2,$(words $(targets)),$(targets)) :
 	$(q)true
-$(firstword $(targets)) :
+$(firstword $(targets)) : | $(top-builddir)
 	$(q)$(if $(config-env),. $(config-env) && )$(MAKE) -C $(top-builddir) \
 	  -f $(call relpath,$(init-srcdir)/Makefile,$(top-builddir)) \
 	  $(MAKECMDGOALS) O=. second-make=1 config-env= \
@@ -58,6 +57,8 @@ $(firstword $(targets)) :
 	  srcdir=$(call relpath,$(init-srcdir),$(top-builddir)) \
 	  top-builddir=$(call relpath,$(abs-top-builddir),$(top-builddir)) \
 	  builddir=$(call relpath,$(init-builddir),$(top-builddir))
+$(top-builddir) :
+	$(q)mkdir -p $@
 else
 .DEFAULT_GOAL := all
 objs :=

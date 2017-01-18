@@ -103,8 +103,6 @@ test_build build objdump i386:x86-64
 build_oe_env=$(eval echo $(make O=build-oe -pq 2> /dev/null | grep -oP 'config-env := \K.*'))
 if [ -e $build_oe_env ]; then
     test_build build-oe $(. $build_oe_env && which $OBJDUMP) arm
-else
-    rmdir build-oe
 fi
 
 echo "All $nocf files OK"
