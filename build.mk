@@ -4,8 +4,7 @@ O ?= .
 MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
 parent = $(patsubst %/$(lastword $(subst /, ,$1)),%,$1)
 anc = $(if $(or $(patsubst $3/%,,$1/),$(patsubst $3/%,,$2/)),$(call anc,$1,$2,$(call parent,$3)),$3)
-space :=
-space +=
+space := $(subst ,, )
 down-path = $(if $(filter $(call anc,$1,$2,$1),$3),,$(patsubst $(call anc,$1,$2,$1)/%,%,$3))
 up-path = $(subst $(space),,$(patsubst %,../,$(subst /, ,$(call down-path,$1,$2,$3))))
 relpath-calc = $(or $(patsubst %/,%,$(call up-path,$1,$2,$2)$(call down-path,$1,$2,$1)),.)
@@ -67,7 +66,6 @@ no-deps := $(filter clean print-%,$(MAKECMDGOALS))
 
 map = $(foreach a,$2,$(call $1,$a))
 bpath = $(call npath,$(builddir)/$1)
-spath = $(patsubst ./%,%,$(srcdir)/$1)
 npath = $(if $(filter $(CURDIR)%,$(abspath $1)),$(patsubst /%,%,$(patsubst \
   $(CURDIR)%,%,$(abspath $1))),$1)
 tflags = _$(or $(call bpath,$1),.)-$2
@@ -140,11 +138,11 @@ $(eval $(call tflags,$2.o,$($3-flags-var)) := \
   $($($3-flags-env)) \
 )
 $(if $(no-deps),,-include $(builddir)/$2.d)
-cleanfiles += $(call bpath,$2.[$(subst $(subst ,, ),,\
+cleanfiles += $(call bpath,$2.[$(subst $(space),,\
   $(sort $($3-built-suffixes) $($3-extra-suffixes)))])
 $(eval $(call tflags,$1,objs) += $(call bpath,$2.o))
 $(eval $(call prepend-unique,$(call bpath,$2/..),mkdirs))
-$(addprefix $(builddir)/$2,$(addprefix .,$($3-built-suffixes))) : \
+$(addprefix $(builddir)/$2.,$($3-built-suffixes)) : \
   $($(call tflags,.,makefile-deps)) | $(call bpath,$2/..)
 $(foreach s,$($3-built-suffixes),$(eval $(call $s-dep,$(builddir)/$2.$s)))
 undefine $2$3-$($3-flags-var)
@@ -202,8 +200,7 @@ endef
 define add-subdir
 $(if $1,mkdirs := $1 $(mkdirs))
 $$(eval $$(call tflags,.,makefile-deps) := \
-  $(if $1,,$(top-srcdir)/build.mk $(configs)) \
-  $$($$(call tflags,..,makefile-deps)) $$(call spath,Makefile))
+  $(top-srcdir)/build.mk $(configs) $$(srcdir)/Makefile)
 subdir := $$(if $$(subdir), \
   $$(patsubst %/,%,$$(subdir)), \
   $$(notdir $$(patsubst %/,%,$$(dir $$(wildcard $$(srcdir)/*/Makefile)))))
