@@ -200,7 +200,8 @@ endef
 define add-subdir
 $(if $1,mkdirs := $1 $(mkdirs))
 $$(eval $$(call tflags,.,makefile-deps) := \
-  $(top-srcdir)/build.mk $(configs) $$(srcdir)/Makefile)
+  $(top-srcdir)/build.mk $(wildcard $(top-srcdir)/common.mk) \
+  $(configs) $$(srcdir)/Makefile)
 subdir := $$(if $$(subdir), \
   $$(patsubst %/,%,$$(subdir)), \
   $$(notdir $$(patsubst %/,%,$$(dir $$(wildcard $$(srcdir)/*/Makefile)))))
