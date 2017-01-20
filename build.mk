@@ -24,7 +24,7 @@ $(if $(filter $(init-builddir),.)$(filter $(init-builddir),$(top-builddir)),, \
 
 flags := env asflags ccflags ldflags
 configs := $(wildcard $(addprefix $(top-srcdir)/config/,\
-  $(filter-out . ..,$(subst -, ,$(notdir $(abs-top-builddir))))))
+  $(subst -, ,$(notdir $(abs-top-builddir)))))
 
 define capture-flags
 $(foreach v,$1,$(eval $v :=))
