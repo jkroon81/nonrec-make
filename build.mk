@@ -2,7 +2,8 @@ ifndef parse-build
 startup-variables := $(.VARIABLES) startup-variables
 O ?= .
 MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
-anc = $(if $(or $(patsubst $3/%,,$1/),$(patsubst $3/%,,$2/)),$(call anc,$1,$2,$(patsubst %/,%,$(dir $3))),$3)
+parent = $(patsubst %/,%,$(dir $1))
+anc = $(if $(or $(patsubst $3/%,,$1/),$(patsubst $3/%,,$2/)),$(call anc,$1,$2,$(call parent,$3)),$3)
 space := $(subst ,, )
 down-path = $(if $(filter $(call anc,$1,$2,$1),$3),,$(patsubst $(call anc,$1,$2,$1)/%,%,$3))
 up-path = $(subst $(space),,$(patsubst %,../,$(subst /, ,$(call down-path,$1,$2,$3))))
@@ -69,7 +70,7 @@ no-deps := $(filter clean print-%,$(MAKECMDGOALS))
 
 map = $(foreach a,$2,$(call $1,$a))
 bpath = $(call relpath,$(builddir)/$1)
-tflags = _$(or $(call bpath,$1),.)-$2
+tflags = _$(call bpath,$1)-$2
 prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
 
 vpath %.c $(top-srcdir)
@@ -186,7 +187,7 @@ $(builddir)/$1 :
 endef
 
 define prep-for-subdir
-override srcdir := $(patsubst ./%,%,$(top-srcdir)/$1)
+override srcdir := $(call relpath,$(top-srcdir)/$1)
 override builddir := $1
 cleanfiles :=
 distcleanfiles :=
@@ -205,7 +206,7 @@ $$(eval $$(call tflags,.,makefile-deps) := \
   $(configs) $$(srcdir)/Makefile)
 subdir := $$(if $$(subdir), \
   $$(patsubst %/,%,$$(subdir)), \
-  $$(notdir $$(patsubst %/,%,$$(dir $$(wildcard $$(srcdir)/*/Makefile)))))
+  $$(notdir $$(call parent,$$(wildcard $$(srcdir)/*/Makefile))))
 cleanfiles += $$(addprefix $$(builddir)/,$$(built-sources))
 $$(if $$(filter $$(builddir),$$(srcdir)),, \
   $$(eval distcleanfiles += $$(call bpath,Makefile)))
