@@ -65,9 +65,7 @@ mkdirs :=
 no-deps := $(filter clean print-%,$(MAKECMDGOALS))
 
 map = $(foreach a,$2,$(call $1,$a))
-bpath = $(call npath,$(builddir)/$1)
-npath = $(if $(filter $(CURDIR)%,$(abspath $1)),$(patsubst /%,%,$(patsubst \
-  $(CURDIR)%,%,$(abspath $1))),$1)
+bpath = $(call relpath,$(builddir)/$1)
 tflags = _$(or $(call bpath,$1),.)-$2
 prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
 
@@ -141,7 +139,7 @@ $(if $(no-deps),,-include $(builddir)/$2.d)
 cleanfiles += $(call bpath,$2.[$(subst $(space),,\
   $(sort $($3-built-suffixes) $($3-extra-suffixes)))])
 $(eval $(call tflags,$1,objs) += $(call bpath,$2.o))
-$(eval $(call prepend-unique,$(call bpath,$2/..),mkdirs))
+$(eval $(call prepend-unique,$(filter-out .,$(call bpath,$2/..)),mkdirs))
 $(addprefix $(builddir)/$2.,$($3-built-suffixes)) : \
   $($(call tflags,.,makefile-deps)) | $(call bpath,$2/..)
 $(foreach s,$($3-built-suffixes),$(eval $(call $s-dep,$(builddir)/$2.$s)))
@@ -149,7 +147,7 @@ undefine $2$3-$($3-flags-var)
 endef
 
 define add-bin-lib-common
-$(eval $(call tflags,$1,libs) := $(call map,npath,$($1-libs)))
+$(eval $(call tflags,$1,libs) := $(call map,relpath,$($1-libs)))
 $(foreach s,$(sort $($1-sources)),$(eval \
   $(call add-source,$1,$(basename $s),$(suffix $s))))
 all : $(builddir)/$1
