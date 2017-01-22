@@ -151,12 +151,13 @@ undefine $2$3-$($3-flags-var)
 endef
 
 define add-bin-lib-common
+$(eval $(call prepend-unique,$(call bpath,$1/..),mkdirs))
 $(eval $(call tflags,$1,libs) := $(call map,relpath,$($1-libs)))
 $(foreach s,$(sort $($1-sources)),$(eval \
   $(call add-source,$1,$(basename $s),$(suffix $s))))
 all : $(builddir)/$1
 $(builddir)/$1 : $($(call tflags,$1,objs)) $($(call tflags,$1,libs)) \
-                 $($(call tflags,.,makefile-deps)) | $(builddir)
+                 $($(call tflags,.,makefile-deps)) | $(call bpath,$1/..)
 $(builddir)/$1.b : $(builddir)/$1
 	$$(objdump) $$(strip $$< > $$@)
 objdump : $(call bpath,$1.b)
@@ -226,7 +227,6 @@ $$(if $$(is-gen-makefile),,$$(eval $$(call parse-subdir,$1)))
 endef
 
 define parse-subdir
-mkdirs := $1 $(mkdirs)
 $$(eval $$(call tflags,.,makefile-deps) := \
   $(top-srcdir)/build.mk $(wildcard $(top-srcdir)/common.mk) \
   $(configs) $$(srcdir)/Makefile)
