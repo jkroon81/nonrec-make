@@ -186,6 +186,28 @@ $(builddir)/$1 :
 	$$(ranlib) -D $$@
 endef
 
+define gen-makefile
+is-gen-makefile := 1
+ifndef parse-build
+MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
+targets := \$$(or \$$(MAKECMDGOALS),_target)
+.DEFAULT_GOAL := \$$(targets)
+.PHONY : \$$(targets)
+\$$(wordlist 2,\$$(words \$$(targets)),\$$(targets)) :
+	@true
+\$$(firstword \$$(targets)) :
+	@\$$(MAKE) -f $1/Makefile \$$(MAKECMDGOALS)
+endif
+endef
+
+define add-makefile
+all : $$(builddir)/Makefile
+$$(builddir)/Makefile : $(top-srcdir)/build.mk | $$(builddir)
+	$$(gen)echo "$$(subst $$(newline),;,$$(call gen-makefile, \
+	  $(call relpath,$(srcdir),$(builddir))))" | tr ";" "\n" > $$@
+distcleanfiles += $$(call bpath,Makefile)
+endef
+
 define prep-for-subdir
 override srcdir := $(call relpath,$(top-srcdir)/$1)
 override builddir := $1
@@ -208,19 +230,13 @@ subdir := $$(if $$(subdir), \
   $$(patsubst %/,%,$$(subdir)), \
   $$(notdir $$(call parent,$$(wildcard $$(srcdir)/*/Makefile))))
 cleanfiles += $$(addprefix $$(builddir)/,$$(built-sources))
-$$(if $$(filter $$(builddir),$$(srcdir)),, \
-  $$(eval distcleanfiles += $$(call bpath,Makefile)))
 $$(foreach s,$$(built-sources),$$(eval $$(builddir)/$$s : \
   | $$(call bpath,$$s/..)))
 $$(foreach b,$$(bin),$$(eval $$(call add-bin,$$b)))
 $$(foreach l,$$(lib),$$(eval $$(call add-lib,$$l)))
+$(if $(filter $(top-srcdir),$(top-builddir)),,$(call add-makefile))
 $$(eval $$(call tflags,.,cleanfiles) := $$(cleanfiles))
 $$(eval $$(call tflags,.,distcleanfiles) := $$(distcleanfiles))
-all : $$(builddir)/Makefile
-$$(builddir)/Makefile : | $$(builddir)
-	$$(gen)echo "$$(subst $$(newline),;, \
-	  $$(call gen-makefile,$(call relpath,$(srcdir),$(builddir))))" \
-	  | tr ";" "\n" > $$@
 .PHONY : _clean-$$(builddir)
 clean : _clean-$$(builddir)
 _clean-$$(builddir) :
@@ -243,20 +259,6 @@ undefine is-gen-makefile
 undefine asflags
 undefine ccflags
 undefine ldflags
-endef
-
-define gen-makefile
-is-gen-makefile := 1
-ifndef parse-build
-MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
-targets := \$$(or \$$(MAKECMDGOALS),_target)
-.DEFAULT_GOAL := \$$(targets)
-.PHONY : \$$(targets)
-\$$(wordlist 2,\$$(words \$$(targets)),\$$(targets)) :
-	@true
-\$$(firstword \$$(targets)) :
-	@\$$(MAKE) -f $1/Makefile \$$(MAKECMDGOALS)
-endif
 endef
 
 parse-build := 1
