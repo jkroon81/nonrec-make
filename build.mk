@@ -157,7 +157,10 @@ $(foreach s,$(sort $($1-sources)),$(eval \
 all : $(builddir)/$1
 $(builddir)/$1 : $($(call tflags,$1,objs)) $($(call tflags,$1,libs)) \
                  $($(call tflags,.,makefile-deps)) | $(builddir)
-cleanfiles += $(call bpath,$1)
+$(builddir)/$1.b : $(builddir)/$1
+	$$(objdump) $$(strip $$< > $$@)
+objdump : $(call bpath,$1.b)
+cleanfiles += $(call bpath,$1) $(call bpath,$1.b)
 undefine $1-sources
 undefine $1-asflags
 undefine $1-ccflags
