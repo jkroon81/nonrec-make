@@ -143,7 +143,7 @@ $(if $(no-deps),,-include $(builddir)/$2.d)
 cleanfiles += $(call bpath,$2.[$(subst $(space),,\
   $(sort $($3-built-suffixes) $($3-extra-suffixes)))])
 $(eval $(call tflags,$1,objs) += $(call bpath,$2.o))
-$(eval $(call prepend-unique,$(filter-out .,$(call bpath,$2/..)),mkdirs))
+$(eval $(call prepend-unique,$(call bpath,$2/..),mkdirs))
 $(addprefix $(builddir)/$2.,$($3-built-suffixes)) : \
   $($(call tflags,.,makefile-deps)) | $(call bpath,$2/..)
 $(foreach s,$($3-built-suffixes),$(eval $(call $s-dep,$(builddir)/$2.$s)))
@@ -211,7 +211,7 @@ $$(builddir)/Makefile : $(top-srcdir)/build.mk | $$(builddir)
 distcleanfiles += $$(call bpath,Makefile)
 endef
 
-define prep-for-subdir
+define add-subdir
 override srcdir := $(call relpath,$(top-srcdir)/$1)
 override builddir := $1
 cleanfiles :=
@@ -222,10 +222,11 @@ subdir :=
 built-sources :=
 is-gen-makefile :=
 include $$(srcdir)/Makefile
+$$(if $$(is-gen-makefile),,$$(eval $$(call parse-subdir,$1)))
 endef
 
-define add-subdir
-$(if $1,mkdirs := $1 $(mkdirs))
+define parse-subdir
+mkdirs := $1 $(mkdirs)
 $$(eval $$(call tflags,.,makefile-deps) := \
   $(top-srcdir)/build.mk $(wildcard $(top-srcdir)/common.mk) \
   $(configs) $$(srcdir)/Makefile)
@@ -248,8 +249,7 @@ _clean-$$(builddir) :
 distclean : _distclean-$$(builddir)
 _distclean-$$(builddir) : _clean-$$(builddir)
 	$$(distclean) $$(_$$(@:_distclean-%=%)-distcleanfiles)
-$$(foreach s,$$(subdir),$$(eval $$(call prep-for-subdir,$(if $1,$1/)$$s)) \
-                        $$(if $$(is-gen-makefile),,$$(eval $$(call add-subdir,$(if $1,$1/)$$s))))
+$$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$$(call relpath,$1/$$s))))
 undefine srcdir
 undefine builddir
 undefine cleanfiles
@@ -265,7 +265,9 @@ undefine ldflags
 endef
 
 parse-build := 1
-$(eval $(call add-subdir,$(filter-out .,$(call relpath,$(init-srcdir),$(top-srcdir)))))
+$(eval $(call parse-subdir,$(call relpath,$(init-srcdir),$(top-srcdir))))
+
+mkdirs := $(filter-out .,$(mkdirs))
 
 $(mkdirs) :
 	$(q)mkdir -p $@
