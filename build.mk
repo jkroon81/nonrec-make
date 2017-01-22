@@ -272,15 +272,9 @@ mkdirs := $(filter-out .,$(mkdirs))
 $(mkdirs) :
 	$(q)mkdir -p $@
 
-clean :
-	$(q)for d in $(mkdirs); do \
-	    if [ -d $$d ]; then \
-	        rmdir --ignore-fail-on-non-empty $$d; \
-	    fi \
-	done
-
+clean :             $(CURDIR)-rmdir-flags := --ignore-fail-on-non-empty
 distclean : $(abs-top-srcdir)-rmdir-flags := --ignore-fail-on-non-empty
-distclean :
+clean distclean :
 	$(q)for d in $(mkdirs); do \
 	    if [ -d $$d ]; then \
 	        rmdir $($(CURDIR)-rmdir-flags) $$d; \
