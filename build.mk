@@ -1,5 +1,5 @@
 ifndef parse-build
-startup-variables := $(.VARIABLES) startup-variables
+startup-vars := $(.VARIABLES) startup-vars
 O ?= .
 MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
 parent = $(patsubst %/,%,$(dir $1))
@@ -42,9 +42,14 @@ $(eval $(call capture-flags,$(flags),$(configs),config))
 
 default-V := 0
 
-q-0 = @
-q-  = $(q-$(default-V))
-q   = $(q-$(V))
+define add-vvar
+$1-0 = $2
+$1-1 = $3
+$1-  = $$($1-$(default-V))
+$1   = $$($1-$V)
+endef
+
+$(eval $(call add-vvar,q,@))
 
 ifndef second-make
 targets := $(or $(MAKECMDGOALS),_target)
@@ -76,40 +81,36 @@ prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
 vpath %.c $(top-srcdir)
 vpath %.S $(top-srcdir)
 
-define add-cmd
-$2-0 = @echo "$1$4";
-$2-  = $$($2-$(default-V))
-$2   = $$($2-$(V))$(strip $3)
-endef
-
 AR      ?= ar
 RANLIB  ?= ranlib
 AS      ?= as
 CC      ?= cc
 OBJDUMP ?= objdump
 
-$(eval $(call add-cmd,  AR        ,ar,$(AR),$$@))
-$(eval $(call add-cmd,  RANLIB    ,ranlib,$(RANLIB),$$@))
-$(eval $(call add-cmd,  AS        ,as,$(AS),$$@))
-$(eval $(call add-cmd,  CC        ,cc,$(CC) -c -MMD -MP,$$@))
-$(eval $(call add-cmd,  CCAS      ,ccas,$(CC) -S,$$@))
-$(eval $(call add-cmd,  CPP       ,cpp,$(CC) -E,$$@))
-$(eval $(call add-cmd,  CCLD      ,ccld,$(CC),$$@))
-$(eval $(call add-cmd,  OBJDUMP   ,objdump,$(OBJDUMP) -rd,$$@))
-$(eval $(call add-cmd,  CLEAN     ,clean,rm -f,$$(@:_clean-%=%)))
-$(eval $(call add-cmd,  DISTCLEAN ,distclean,rm -f,$$(@:_distclean-%=%)))
-$(eval $(call add-cmd,  GEN       ,gen,,$$@))
+add-vcmd = $(call add-vvar,$(strip $1),@echo "$2";)
+
+$(eval $(call add-vcmd,ar_v       ,  AR        $$@))
+$(eval $(call add-vcmd,ranlib_v   ,  RANLIB    $$@))
+$(eval $(call add-vcmd,as_v       ,  AS        $$@))
+$(eval $(call add-vcmd,cc_v       ,  CC        $$@))
+$(eval $(call add-vcmd,ccas_v     ,  CCAS      $$@))
+$(eval $(call add-vcmd,cpp_v      ,  CPP       $$@))
+$(eval $(call add-vcmd,ccld_v     ,  CCLD      $$@))
+$(eval $(call add-vcmd,objdump_v  ,  OBJDUMP   $$@))
+$(eval $(call add-vcmd,clean_v    ,  CLEAN     $$(@:_clean-%=%)))
+$(eval $(call add-vcmd,distclean_v,  DISTCLEAN $$(@:_distclean-%=%)))
+$(eval $(call add-vcmd,gen        ,  GEN       $$@))
 
 %.o : %.S
-	$(as) $(strip $(_$@-asflags) $< -o $@)
+	$(as_v)$(AS) $(strip $(_$@-asflags) $< -o $@)
 %.o : %.c
-	$(cc) $(strip $(_$@-ccflags) $< -o $@)
+	$(cc_v)$(CC) -c -MMD -MP $(strip $(_$@-ccflags) $< -o $@)
 %.s : %.c
-	$(ccas) $(strip $(_$(@:%.s=%.o)-ccflags) $< -o $@)
+	$(ccas_v)$(CC) -S $(strip $(_$(@:%.s=%.o)-ccflags) $< -o $@)
 %.i : %.c
-	$(cpp) $(strip $(_$(@:%.i=%.o)-ccflags) $< -o $@)
+	$(cpp_v)$(CC) -E $(strip $(_$(@:%.i=%.o)-ccflags) $< -o $@)
 %.b : %.o
-	$(objdump) $(strip $< > $@)
+	$(objdump_v)$(OBJDUMP) -rd $(strip $< > $@)
 
 b-dep = objdump : $1
 i-dep = cpp : $1
@@ -159,7 +160,7 @@ all : $(builddir)/$1
 $(builddir)/$1 : $($(call tflags,$1,objs)) $($(call tflags,$1,libs)) \
                  $($(call tflags,.,makefile-deps)) | $(call bpath,$1/..)
 $(builddir)/$1.b : $(builddir)/$1
-	$$(objdump) $$(strip $$< > $$@)
+	$$(objdump_v)$(OBJDUMP) -rd $$(strip $$< > $$@)
 objdump : $(call bpath,$1.b)
 cleanfiles += $(call bpath,$1) $(call bpath,$1.b)
 undefine $1-sources
@@ -179,15 +180,15 @@ $(eval $(call tflags,$1,ldflags) := \
   $(LDFLAGS) \
 )
 $(builddir)/$1 :
-	$$(ccld) $$(strip $$(_$$@-ldflags) $$(_$$@-objs) $$(_$$@-libs) -o $$@)
+	$$(ccld_v)$(CC) $$(strip $$(_$$@-ldflags) $$(_$$@-objs) $$(_$$@-libs) -o $$@)
 endef
 
 define add-lib
 $(eval $(call add-bin-lib-common,$1))
 $(builddir)/$1 :
 	$$(q)rm -f $$@
-	$$(ar) crD $$@ $$(_$$@-objs)
-	$$(ranlib) -D $$@
+	$$(ar_v)$(AR) crD $$@ $$(_$$@-objs)
+	$$(ranlib_v)$(RANLIB) -D $$@
 endef
 
 define gen-makefile
@@ -244,11 +245,11 @@ $$(eval $$(call tflags,.,distcleanfiles) := $$(distcleanfiles))
 .PHONY : _clean-$$(builddir)
 clean : _clean-$$(builddir)
 _clean-$$(builddir) :
-	$$(clean) $$(_$$(@:_clean-%=%)-cleanfiles)
+	$$(clean_v)rm -f $$(_$$(@:_clean-%=%)-cleanfiles)
 .PHONY : _distclean-$$(builddir)
 distclean : _distclean-$$(builddir)
 _distclean-$$(builddir) : _clean-$$(builddir)
-	$$(distclean) $$(_$$(@:_distclean-%=%)-distcleanfiles)
+	$$(distclean_v)rm -f $$(_$$(@:_distclean-%=%)-distcleanfiles)
 $$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$$(call relpath,$1/$$s))))
 undefine srcdir
 undefine builddir
@@ -286,13 +287,10 @@ print-%: ; $(q)echo $*=$($*)
 print-data-base :
 	$(q)$(MAKE) -f $(init-srcdir)/Makefile -pq || true
 
-variable-list-0 = $(filter-out $(startup-variables),$(.VARIABLES))
-variable-list-1 = $(.VARIABLES)
-variable-list-  = $(variable-list-$(default-V))
-variable-list   = $(variable-list-$(V))
+$(eval $(call add-vvar,varlist,$(filter-out $(startup-vars),$(.VARIABLES)),$(.VARIABLES)))
 
 print-variables :
-	$(foreach v,$(sort $(variable-list)),$(info $v=$(value $v)))
+	$(foreach v,$(sort $(varlist)),$(info $v=$(value $v)))
 	@true
 
 .PHONY : all asm clean distclean cpp print-% print-data-base print-variables
