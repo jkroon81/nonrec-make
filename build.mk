@@ -81,11 +81,11 @@ prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
 vpath %.c $(top-srcdir)
 vpath %.S $(top-srcdir)
 
-AR      ?= ar
-RANLIB  ?= ranlib
-AS      ?= as
-CC      ?= cc
-OBJDUMP ?= objdump
+AR      ?= $(CROSS_COMPILE)ar
+RANLIB  ?= $(CROSS_COMPILE)ranlib
+AS      ?= $(CROSS_COMPILE)as
+CC      ?= $(CROSS_COMPILE)gcc
+OBJDUMP ?= $(CROSS_COMPILE)objdump
 
 add-vcmd = $(call add-vvar,$(strip $1),@echo "$2";)
 
