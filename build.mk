@@ -1,6 +1,5 @@
 ifndef parse-build
 startup-vars := $(.VARIABLES) startup-vars
-O ?= .
 MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
 parent = $(patsubst %/,%,$(dir $1))
 anc = $(if $(or $(patsubst $3/%,,$1/),$(patsubst $3/%,,$2/)),$(call anc,$1,$2,$(call parent,$3)),$3)
@@ -15,14 +14,14 @@ relpath-abs = $(strip $(if $2,$(call relpath-calc,$1,$2), \
 relpath = $(or $(call relpath-abs,$(abspath $1),$(if $2,$(abspath $2))),.)
 abs-top-srcdir := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 top-srcdir := $(call relpath,$(abs-top-srcdir))
-abs-init-srcdir := $(abspath $(dir $(firstword $(MAKEFILE_LIST))))
+abs-init-srcdir ?= $(abspath $(dir $(firstword $(MAKEFILE_LIST))))
 init-srcdir := $(call relpath,$(abs-init-srcdir))
-abs-init-builddir := $(abspath $O)
+abs-init-builddir ?= $(if $O,$(abspath $O),$(CURDIR))
 init-builddir := $(call relpath,$(abs-init-builddir))
 abs-top-builddir := $(abspath $(init-builddir)/$(call relpath,$(top-srcdir),$(init-srcdir)))
 top-builddir := $(call relpath,$(abs-top-builddir))
 
-$(if $(filter $(init-builddir),.)$(filter $(init-builddir),$(top-builddir)),, \
+$(if $(and $O,$(filter-out $(init-builddir),$(top-builddir))), \
   $(error Out-of-tree build only supported from top build directory) \
 )
 
@@ -52,19 +51,17 @@ endef
 $(eval $(call add-vvar,q,@))
 
 ifndef second-make
-targets := $(or $(MAKECMDGOALS),_target)
+targets := $(or $(MAKECMDGOALS),all)
 .DEFAULT_GOAL := $(targets)
 .PHONY : $(targets)
 $(wordlist 2,$(words $(targets)),$(targets)) :
 	$(q)true
 $(firstword $(targets)) : | $(top-builddir)
 	$(q)$(if $(config-env),. $(config-env) && )$(MAKE) -C $(top-builddir) \
-	  -f $(call relpath,$(init-srcdir)/Makefile,$(top-builddir)) \
-	  $(MAKECMDGOALS) O=. second-make=1 config-env= \
-	  top-srcdir=$(call relpath,$(abs-top-srcdir),$(top-builddir)) \
-	  srcdir=$(call relpath,$(init-srcdir),$(top-builddir)) \
-	  top-builddir=$(call relpath,$(abs-top-builddir),$(top-builddir)) \
-	  builddir=$(call relpath,$(init-builddir),$(top-builddir))
+	  -f $(call relpath,$(top-srcdir)/build.mk,$(top-builddir)) \
+	  $(MAKECMDGOALS) O= second-make=1 config-env= \
+	  abs-init-srcdir=$(abs-init-srcdir) \
+	  abs-init-builddir=$(abs-init-builddir)
 $(top-builddir) :
 	$(q)mkdir -p $@
 else
@@ -194,14 +191,9 @@ endef
 define gen-makefile
 is-gen-makefile := 1
 ifndef parse-build
-MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
-targets := \$$(or \$$(MAKECMDGOALS),_target)
-.DEFAULT_GOAL := \$$(targets)
-.PHONY : \$$(targets)
-\$$(wordlist 2,\$$(words \$$(targets)),\$$(targets)) :
-	@true
-\$$(firstword \$$(targets)) :
-	@\$$(MAKE) -f $1/Makefile \$$(MAKECMDGOALS)
+abs-init-srcdir := $(abspath $1)
+abs-init-builddir := \$$(if \$$O,\$$(abspath \$$O),\$$(CURDIR))
+include $(call relpath,$(abs-top-srcdir)/build.mk,$2)
 endif
 endef
 
@@ -209,13 +201,13 @@ define add-makefile
 all : $$(builddir)/Makefile
 $$(builddir)/Makefile : $(top-srcdir)/build.mk | $$(builddir)
 	$$(gen)echo "$$(subst $$(newline),;,$$(call gen-makefile, \
-	  $(call relpath,$(srcdir),$(builddir))))" | tr ";" "\n" > $$@
+	  $(srcdir),$(builddir)))" | tr ";" "\n" > $$@
 distcleanfiles += $$(call bpath,Makefile)
 endef
 
 define add-subdir
-override srcdir := $(call relpath,$(top-srcdir)/$1)
-override builddir := $1
+srcdir := $(call relpath,$(top-srcdir)/$1)
+builddir := $1
 cleanfiles :=
 distcleanfiles :=
 bin :=
@@ -266,7 +258,7 @@ undefine ldflags
 endef
 
 parse-build := 1
-$(eval $(call parse-subdir,$(call relpath,$(init-srcdir),$(top-srcdir))))
+$(eval $(call add-subdir,$(call relpath,$(init-srcdir),$(top-srcdir))))
 
 mkdirs := $(filter-out .,$(mkdirs))
 
