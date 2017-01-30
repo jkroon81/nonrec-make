@@ -192,7 +192,7 @@ define gen-makefile
 is-gen-makefile := 1
 ifndef parse-build
 abs-init-srcdir := $(abspath $1)
-abs-init-builddir := \$$(if \$$O,\$$(abspath \$$O),\$$(CURDIR))
+abs-init-builddir := $$(if $$O,$$(abspath $$O),$$(CURDIR))
 include $(call relpath,$(abs-top-srcdir)/build.mk,$2)
 endif
 endef
@@ -200,8 +200,7 @@ endef
 define add-makefile
 all : $$(builddir)/Makefile
 $$(builddir)/Makefile : $(top-srcdir)/build.mk | $$(builddir)
-	$$(gen)echo "$$(subst $$(newline),;,$$(call gen-makefile, \
-	  $(srcdir),$(builddir)))" | tr ";" "\n" > $$@
+	$$(gen)$$(file > $$@,$$(call gen-makefile,$(srcdir),$(builddir)))
 distcleanfiles += $$(call bpath,Makefile)
 endef
 
