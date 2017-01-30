@@ -59,7 +59,6 @@ $(top-builddir) :
 	$(q)mkdir -p $@
 else
 .DEFAULT_GOAL := all
-objs :=
 mkdirs :=
 no-deps := $(filter clean print-%,$(MAKECMDGOALS))
 
@@ -120,8 +119,6 @@ define newline
 endef
 
 define add-source
-$(if $(filter $(call bpath,$2.o),$(objs)),$(error Multiple $(call bpath,$2.o)))
-objs += $(call bpath,$2.o)
 $(eval $(call tflags,$2.o,$($3-flags-var)) := $(strip \
   $(common-$($3-flags-var)) \
   $(config-$($3-flags-var)) \
