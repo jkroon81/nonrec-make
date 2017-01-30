@@ -39,14 +39,7 @@ endef
 $(eval $(call capture-flags,$(flags),$(top-srcdir)/common.mk,common))
 $(eval $(call capture-flags,$(flags),$(configs),config))
 
-default-V := 0
-
-define add-vvar
-$1-0 = $2
-$1-1 = $3
-$1-  = $$($1-$(default-V))
-$1   = $$($1-$V)
-endef
+add-vvar = $1 = $(if $(filter $(or $V,0),0),$2,$3)
 
 $(eval $(call add-vvar,q,@))
 
