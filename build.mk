@@ -191,10 +191,10 @@ endif
 endef
 
 define add-makefile
-all : $$(builddir)/Makefile
-$$(builddir)/Makefile : $(top-srcdir)/build.mk | $$(builddir)
+all : $(builddir)/Makefile
+$(builddir)/Makefile : $(top-srcdir)/build.mk | $(builddir)
 	$$(gen)$$(file > $$@,$$(call gen-makefile,$(srcdir),$(builddir)))
-distcleanfiles += $$(call bpath,Makefile)
+distcleanfiles += $(call bpath,Makefile)
 endef
 
 define add-subdir
@@ -227,25 +227,25 @@ undefine ldflags
 endef
 
 define parse-subdir
-$$(eval $$(call tflags,.,makefile-deps) := \
+$(eval $(call tflags,.,makefile-deps) := \
   $(top-srcdir)/build.mk $(wildcard $(top-srcdir)/common.mk) \
-  $(configs) $$(srcdir)/Makefile)
-subdir := $$(if $$(subdir), \
-  $$(patsubst %/,%,$$(subdir)), \
-  $$(notdir $$(call parent,$$(wildcard $$(srcdir)/*/Makefile))))
-cleanfiles += $$(addprefix $$(builddir)/,$$(built-sources))
-$$(foreach s,$$(built-sources),$$(eval $$(builddir)/$$s : \
-  | $$(call bpath,$$s/..)))
-$$(foreach b,$$(bin),$$(eval $$(call add-bin,$$b)))
-$$(foreach l,$$(lib),$$(eval $$(call add-lib,$$l)))
+  $(configs) $(srcdir)/Makefile)
+subdir := $(if $(subdir), \
+  $(patsubst %/,%,$(subdir)), \
+  $(notdir $(call parent,$(wildcard $(srcdir)/*/Makefile))))
+cleanfiles += $(addprefix $(builddir)/,$(built-sources))
+$(foreach s,$(built-sources),$(eval $(builddir)/$s : \
+  | $(call bpath,$s/..)))
+$(foreach b,$(bin),$(eval $(call add-bin,$b)))
+$(foreach l,$(lib),$(eval $(call add-lib,$l)))
 $(if $(filter $(top-srcdir),$(top-builddir)),,$(call add-makefile))
 $$(eval $$(call tflags,.,cleanfiles) := $$(cleanfiles))
 $$(eval $$(call tflags,.,distcleanfiles) := $$(distcleanfiles))
-.PHONY clean : _clean-$$(builddir)
-_clean-$$(builddir) :
+.PHONY clean : _clean-$(builddir)
+_clean-$(builddir) :
 	$$(clean_v)rm -f $$(_$$(@:_clean-%=%)-cleanfiles)
-.PHONY distclean : _distclean-$$(builddir)
-_distclean-$$(builddir) : _clean-$$(builddir)
+.PHONY distclean : _distclean-$(builddir)
+_distclean-$(builddir) : _clean-$(builddir)
 	$$(distclean_v)rm -f $$(_$$(@:_distclean-%=%)-distcleanfiles)
 $$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$$(call relpath,$1/$$s))))
 endef
