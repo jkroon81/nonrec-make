@@ -60,7 +60,7 @@ $(top-builddir) :
 else
 .DEFAULT_GOAL := all
 mkdirs :=
-no-deps := $(filter clean print-%,$(MAKECMDGOALS))
+skip-deps := $(filter clean print-%,$(MAKECMDGOALS))
 
 map = $(foreach a,$2,$(call $1,$a))
 bpath = $(call relpath,$(builddir)/$1)
@@ -127,7 +127,7 @@ $(eval $(call tflags,$2.o,$($3-flags-var)) := $(strip \
   $($2$3-$($3-flags-var)) \
   $($($3-flags-env)) \
 ))
-$(if $(no-deps),,-include $(builddir)/$2.d)
+$(if $(skip-deps),,-include $(builddir)/$2.d)
 cleanfiles += $(call bpath,$2.[$(subst $(space),,\
   $(sort $($3-built-suffixes) $($3-extra-suffixes)))])
 $(eval $(call tflags,$1,objs) += $(call bpath,$2.o))
