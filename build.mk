@@ -92,15 +92,15 @@ $(eval $(call add-vcmd,distclean_v,  DISTCLEAN $$(@:_distclean-%=%)))
 $(eval $(call add-vcmd,gen        ,  GEN       $$@))
 
 %.o : %.S
-	$(as_v)$(AS) $(strip $(_$@-asflags) $< -o $@)
+	$(as_v)$(AS) $(_$@-asflags) $< -o $@
 %.o : %.c
-	$(cc_v)$(CC) -c -MMD -MP $(strip $(_$@-ccflags) $< -o $@)
+	$(cc_v)$(CC) -c -MMD -MP $(_$@-ccflags) $< -o $@
 %.s : %.c
-	$(ccas_v)$(CC) -S $(strip $(_$(@:%.s=%.o)-ccflags) $< -o $@)
+	$(ccas_v)$(CC) -S $(_$(@:%.s=%.o)-ccflags) $< -o $@
 %.i : %.c
-	$(cpp_v)$(CC) -E $(strip $(_$(@:%.i=%.o)-ccflags) $< -o $@)
+	$(cpp_v)$(CC) -E $(_$(@:%.i=%.o)-ccflags) $< -o $@
 %.b : %.o
-	$(objdump_v)$(OBJDUMP) -rd $(strip $< > $@)
+	$(objdump_v)$(OBJDUMP) -rd $< > $@
 
 b-dep = objdump : $1
 i-dep = cpp : $1
@@ -122,14 +122,14 @@ endef
 define add-source
 $(if $(filter $(call bpath,$2.o),$(objs)),$(error Multiple $(call bpath,$2.o)))
 objs += $(call bpath,$2.o)
-$(eval $(call tflags,$2.o,$($3-flags-var)) := \
+$(eval $(call tflags,$2.o,$($3-flags-var)) := $(strip \
   $(common-$($3-flags-var)) \
   $(config-$($3-flags-var)) \
   $($($3-flags-var)) \
   $($1-$($3-flags-var)) \
   $($2$3-$($3-flags-var)) \
   $($($3-flags-env)) \
-)
+))
 $(if $(no-deps),,-include $(builddir)/$2.d)
 cleanfiles += $(call bpath,$2.[$(subst $(space),,\
   $(sort $($3-built-suffixes) $($3-extra-suffixes)))])
@@ -150,7 +150,7 @@ all : $(builddir)/$1
 $(builddir)/$1 : $($(call tflags,$1,objs)) $($(call tflags,$1,libs)) \
                  $($(call tflags,.,makefile-deps)) | $(call bpath,$1/..)
 $(builddir)/$1.b : $(builddir)/$1
-	$$(objdump_v)$(OBJDUMP) -rd $$(strip $$< > $$@)
+	$$(objdump_v)$(OBJDUMP) -rd $$< > $$@
 objdump : $(call bpath,$1.b)
 cleanfiles += $(call bpath,$1) $(call bpath,$1.b)
 undefine $1-sources
@@ -162,15 +162,15 @@ endef
 
 define add-bin
 $(eval $(call add-bin-lib-common,$1))
-$(eval $(call tflags,$1,ldflags) := \
+$(eval $(call tflags,$1,ldflags) := $(strip \
   $(common-ldflags) \
   $(config-ldflags) \
   $(ldflags) \
   $($1-ldflags) \
   $(LDFLAGS) \
-)
+))
 $(builddir)/$1 :
-	$$(ccld_v)$(CC) $$(strip $$(_$$@-ldflags) $$(_$$@-objs) $$(_$$@-libs) -o $$@)
+	$$(ccld_v)$(CC) $$(_$$@-ldflags) $$(_$$@-objs) $$(_$$@-libs) -o $$@
 endef
 
 define add-lib
