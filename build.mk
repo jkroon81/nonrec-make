@@ -99,9 +99,9 @@ $(eval $(call add-vcmd,gen        ,  GEN       $$@))
 %.o : %.c
 	$(cc_v)$(CC) -c -MMD -MP $(_$@-ccflags) $< -o $@
 %.s : %.c
-	$(ccas_v)$(CC) -S $(_$(@:%.s=%.o)-ccflags) $< -o $@
+	$(ccas_v)$(CC) -S $(_$*.o-ccflags) $< -o $@
 %.i : %.c
-	$(cpp_v)$(CC) -E $(_$(@:%.i=%.o)-ccflags) $< -o $@
+	$(cpp_v)$(CC) -E $(_$*.o-ccflags) $< -o $@
 %.b : %.o
 	$(objdump_v)$(OBJDUMP) -rd $< > $@
 
