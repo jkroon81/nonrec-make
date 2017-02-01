@@ -68,6 +68,8 @@ tflags = _$(call bpath,$1)-$2
 prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
 makefile-deps = $(top-srcdir)/build.mk $(wildcard $(top-srcdir)/common.mk) \
   $(configs) $(srcdir)/Makefile
+pname = $(subst /,~,$1)
+rname = $(subst ~,/,$1)
 
 vpath %.c $(top-srcdir)
 vpath %.S $(top-srcdir)
@@ -88,8 +90,8 @@ $(eval $(call add-vcmd,ccas_v     ,  CCAS      $$@))
 $(eval $(call add-vcmd,cpp_v      ,  CPP       $$@))
 $(eval $(call add-vcmd,ccld_v     ,  CCLD      $$@))
 $(eval $(call add-vcmd,objdump_v  ,  OBJDUMP   $$@))
-$(eval $(call add-vcmd,clean_v    ,  CLEAN     $$(@:_clean-%=%)))
-$(eval $(call add-vcmd,distclean_v,  DISTCLEAN $$(@:_distclean-%=%)))
+$(eval $(call add-vcmd,clean_v    ,  CLEAN     $$(call rname,$$*)))
+$(eval $(call add-vcmd,distclean_v,  DISTCLEAN $$(call rname,$$*)))
 $(eval $(call add-vcmd,gen        ,  GEN       $$@))
 
 %.o : %.S
@@ -237,12 +239,8 @@ $(foreach l,$(lib),$(eval $(call add-lib,$l)))
 $(if $(filter $(top-srcdir),$(top-builddir)),,$(call add-makefile))
 $$(eval $$(call tflags,.,cleanfiles) := $$(cleanfiles))
 $$(eval $$(call tflags,.,distcleanfiles) := $$(distcleanfiles))
-.PHONY clean : _clean-$(builddir)
-_clean-$(builddir) :
-	$$(clean_v)rm -f $$(_$$(@:_clean-%=%)-cleanfiles)
-.PHONY distclean : _distclean-$(builddir)
-_distclean-$(builddir) : _clean-$(builddir)
-	$$(distclean_v)rm -f $$(_$$(@:_distclean-%=%)-distcleanfiles)
+clean     :     _clean-$(call pname,$(builddir))
+distclean : _distclean-$(call pname,$(builddir))
 $$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$$(call relpath,$1/$$s))))
 endef
 
@@ -253,6 +251,12 @@ mkdirs := $(filter-out .,$(mkdirs))
 
 $(mkdirs) :
 	$(q)mkdir -p $@
+
+_clean-% :
+	$(clean_v)rm -f $(_$(call rname,$*)-cleanfiles)
+
+_distclean-% : _clean-%
+	$(distclean_v)rm -f $(_$(call rname,$*)-distcleanfiles)
 
 clean :             $(CURDIR)-rmdir-flags := --ignore-fail-on-non-empty
 distclean : $(abs-top-srcdir)-rmdir-flags := --ignore-fail-on-non-empty
