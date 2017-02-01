@@ -66,6 +66,8 @@ map = $(foreach a,$2,$(call $1,$a))
 bpath = $(call relpath,$(builddir)/$1)
 tflags = _$(call bpath,$1)-$2
 prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
+makefile-deps = $(top-srcdir)/build.mk $(wildcard $(top-srcdir)/common.mk) \
+  $(configs) $(srcdir)/Makefile
 
 vpath %.c $(top-srcdir)
 vpath %.S $(top-srcdir)
@@ -133,7 +135,7 @@ cleanfiles += $(call bpath,$2.[$(subst $(space),,\
 $(eval $(call tflags,$1,objs) += $(call bpath,$2.o))
 $(eval $(call prepend-unique,$(call bpath,$2/..),mkdirs))
 $(addprefix $(builddir)/$2.,$($3-built-suffixes)) : \
-  $($(call tflags,.,makefile-deps)) | $(call bpath,$2/..)
+  $(makefile-deps) | $(call bpath,$2/..)
 $(foreach s,$($3-built-suffixes),$(eval $(call $s-dep,$(builddir)/$2.$s)))
 undefine $2$3-$($3-flags-var)
 endef
@@ -145,7 +147,7 @@ $(foreach s,$(sort $($1-sources)),$(eval \
   $(call add-source,$1,$(basename $s),$(suffix $s))))
 all : $(builddir)/$1
 $(builddir)/$1 : $($(call tflags,$1,objs)) $($(call tflags,$1,libs)) \
-                 $($(call tflags,.,makefile-deps)) | $(call bpath,$1/..)
+                 $(makefile-deps) | $(call bpath,$1/..)
 $(builddir)/$1.b : $(builddir)/$1
 	$$(objdump_v)$(OBJDUMP) -rd $$< > $$@
 objdump : $(call bpath,$1.b)
@@ -224,9 +226,6 @@ undefine ldflags
 endef
 
 define parse-subdir
-$(eval $(call tflags,.,makefile-deps) := \
-  $(top-srcdir)/build.mk $(wildcard $(top-srcdir)/common.mk) \
-  $(configs) $(srcdir)/Makefile)
 subdir := $(if $(subdir), \
   $(patsubst %/,%,$(subdir)), \
   $(notdir $(call parent,$(wildcard $(srcdir)/*/Makefile))))
