@@ -1,5 +1,6 @@
 ifndef parse-build
-startup-vars := $(.VARIABLES) startup-vars
+cmdline-vars := $(foreach v,$(MAKEOVERRIDES),$(word 1,$(subst =, ,$v)))
+startup-vars := $(filter-out $(cmdline-vars),$(.VARIABLES)) startup-vars
 MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
 parent = $(patsubst %/,%,$(dir $1))
 anc = $(if $(or $(patsubst $3/%,,$1/),$(patsubst $3/%,,$2/)),$(call anc,$1,$2,$(call parent,$3)),$3)
