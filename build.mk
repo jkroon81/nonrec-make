@@ -69,8 +69,7 @@ tflags = _$(call bpath,$1)-$2
 prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
 makefile-deps = $(top-srcdir)/build.mk $(wildcard $(top-srcdir)/common.mk) \
   $(configs) $(srcdir)/Makefile
-pname = $(subst /,~,$1)
-rname = $(subst ~,/,$1)
+pname = $(call relpath,$1,$(init-builddir))
 
 vpath %.c $(top-srcdir)
 vpath %.S $(top-srcdir)
@@ -83,17 +82,17 @@ OBJDUMP ?= $(CROSS_COMPILE)objdump
 
 add-vcmd = $(call add-vvar,$(strip $1),@echo "$2";)
 
-$(eval $(call add-vcmd,ar_v       ,  AR        $$(call relpath,$$@,$(init-builddir))))
-$(eval $(call add-vcmd,ranlib_v   ,  RANLIB    $$(call relpath,$$@,$(init-builddir))))
-$(eval $(call add-vcmd,as_v       ,  AS        $$(call relpath,$$@,$(init-builddir))))
-$(eval $(call add-vcmd,cc_v       ,  CC        $$(call relpath,$$@,$(init-builddir))))
-$(eval $(call add-vcmd,ccas_v     ,  CCAS      $$(call relpath,$$@,$(init-builddir))))
-$(eval $(call add-vcmd,cpp_v      ,  CPP       $$(call relpath,$$@,$(init-builddir))))
-$(eval $(call add-vcmd,ccld_v     ,  CCLD      $$(call relpath,$$@,$(init-builddir))))
-$(eval $(call add-vcmd,objdump_v  ,  OBJDUMP   $$(call relpath,$$@,$(init-builddir))))
-$(eval $(call add-vcmd,clean_v    ,  CLEAN     $$(call relpath,$$(call rname,$$*),$(init-builddir))))
-$(eval $(call add-vcmd,distclean_v,  DISTCLEAN $$(call relpath,$$(call rname,$$*),$(init-builddir))))
-$(eval $(call add-vcmd,gen        ,  GEN       $$(call relpath,$$@,$(init-builddir))))
+$(eval $(call add-vcmd,ar_v       ,  AR        $$(call pname,$$@)))
+$(eval $(call add-vcmd,ranlib_v   ,  RANLIB    $$(call pname,$$@)))
+$(eval $(call add-vcmd,as_v       ,  AS        $$(call pname,$$@)))
+$(eval $(call add-vcmd,cc_v       ,  CC        $$(call pname,$$@)))
+$(eval $(call add-vcmd,ccas_v     ,  CCAS      $$(call pname,$$@)))
+$(eval $(call add-vcmd,cpp_v      ,  CPP       $$(call pname,$$@)))
+$(eval $(call add-vcmd,ccld_v     ,  CCLD      $$(call pname,$$@)))
+$(eval $(call add-vcmd,objdump_v  ,  OBJDUMP   $$(call pname,$$@)))
+$(eval $(call add-vcmd,clean_v    ,  CLEAN     $$(call pname,$$(subst ~,/,$$*))))
+$(eval $(call add-vcmd,distclean_v,  DISTCLEAN $$(call pname,$$(subst ~,/,$$*))))
+$(eval $(call add-vcmd,gen        ,  GEN       $$(call pname,$$@)))
 
 %.o : %.S
 	$(as_v)$(AS) $(_$@-asflags) $< -o $@
@@ -240,8 +239,8 @@ $(foreach l,$(lib),$(eval $(call add-lib,$l)))
 $(if $(filter $(top-srcdir),$(top-builddir)),,$(call add-makefile))
 $$(eval $$(call tflags,.,cleanfiles) := $$(cleanfiles))
 $$(eval $$(call tflags,.,distcleanfiles) := $$(distcleanfiles))
-clean     :     _clean-$(call pname,$(builddir))
-distclean : _distclean-$(call pname,$(builddir))
+clean     :     _clean-$(subst /,~,$(builddir))
+distclean : _distclean-$(subst /,~,$(builddir))
 $$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$$(call relpath,$1/$$s))))
 endef
 
@@ -254,10 +253,10 @@ $(mkdirs) :
 	$(q)mkdir -p $@
 
 _clean-% :
-	$(clean_v)rm -f $(_$(call rname,$*)-cleanfiles)
+	$(clean_v)rm -f $(_$(subst ~,/,$*)-cleanfiles)
 
 _distclean-% : _clean-%
-	$(distclean_v)rm -f $(_$(call rname,$*)-distcleanfiles)
+	$(distclean_v)rm -f $(_$(subst ~,/,$*)-distcleanfiles)
 
 clean :             $(CURDIR)-rmdir-flags := --ignore-fail-on-non-empty
 distclean : $(abs-top-srcdir)-rmdir-flags := --ignore-fail-on-non-empty
