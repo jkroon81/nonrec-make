@@ -83,17 +83,17 @@ OBJDUMP ?= $(CROSS_COMPILE)objdump
 
 add-vcmd = $(call add-vvar,$(strip $1),@echo "$2";)
 
-$(eval $(call add-vcmd,ar_v       ,  AR        $$@))
-$(eval $(call add-vcmd,ranlib_v   ,  RANLIB    $$@))
-$(eval $(call add-vcmd,as_v       ,  AS        $$@))
-$(eval $(call add-vcmd,cc_v       ,  CC        $$@))
-$(eval $(call add-vcmd,ccas_v     ,  CCAS      $$@))
-$(eval $(call add-vcmd,cpp_v      ,  CPP       $$@))
-$(eval $(call add-vcmd,ccld_v     ,  CCLD      $$@))
-$(eval $(call add-vcmd,objdump_v  ,  OBJDUMP   $$@))
-$(eval $(call add-vcmd,clean_v    ,  CLEAN     $$(call rname,$$*)))
-$(eval $(call add-vcmd,distclean_v,  DISTCLEAN $$(call rname,$$*)))
-$(eval $(call add-vcmd,gen        ,  GEN       $$@))
+$(eval $(call add-vcmd,ar_v       ,  AR        $$(call relpath,$$@,$(init-builddir))))
+$(eval $(call add-vcmd,ranlib_v   ,  RANLIB    $$(call relpath,$$@,$(init-builddir))))
+$(eval $(call add-vcmd,as_v       ,  AS        $$(call relpath,$$@,$(init-builddir))))
+$(eval $(call add-vcmd,cc_v       ,  CC        $$(call relpath,$$@,$(init-builddir))))
+$(eval $(call add-vcmd,ccas_v     ,  CCAS      $$(call relpath,$$@,$(init-builddir))))
+$(eval $(call add-vcmd,cpp_v      ,  CPP       $$(call relpath,$$@,$(init-builddir))))
+$(eval $(call add-vcmd,ccld_v     ,  CCLD      $$(call relpath,$$@,$(init-builddir))))
+$(eval $(call add-vcmd,objdump_v  ,  OBJDUMP   $$(call relpath,$$@,$(init-builddir))))
+$(eval $(call add-vcmd,clean_v    ,  CLEAN     $$(call relpath,$$(call rname,$$*),$(init-builddir))))
+$(eval $(call add-vcmd,distclean_v,  DISTCLEAN $$(call relpath,$$(call rname,$$*),$(init-builddir))))
+$(eval $(call add-vcmd,gen        ,  GEN       $$(call relpath,$$@,$(init-builddir))))
 
 %.o : %.S
 	$(as_v)$(AS) $(_$@-asflags) $< -o $@
