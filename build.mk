@@ -105,9 +105,9 @@ $(eval $(call add-vcmd,gen        ,  GEN       $$(call pname,$$@)))
 %.b : %.o
 	$(objdump_v)$(OBJDUMP) -rd $< > $@
 
-b-dep = objdump : $1
-i-dep = cpp : $1
-s-dep = asm : $1
+b-dep = objdump
+i-dep = cpp
+s-dep = asm
 
 .S-flags-var := asflags
 .S-flags-env := ASFLAGS
@@ -138,7 +138,7 @@ $(eval $(call tflags,$1,objs) += $(call bpath,$2.o))
 $(eval $(call prepend-unique,$(call bpath,$2/..),mkdirs))
 $(addprefix $(builddir)/$2.,$($3-built-suffixes)) : \
   $(makefile-deps) | $(call bpath,$2/..)
-$(foreach s,$($3-built-suffixes),$(eval $(call $s-dep,$(builddir)/$2.$s)))
+$(foreach s,$($3-built-suffixes),$(eval $($s-dep) : $(builddir)/$2.$s))
 undefine $2$3-$($3-flags-var)
 endef
 
