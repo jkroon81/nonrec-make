@@ -66,7 +66,7 @@ skip-deps := $(filter clean print-%,$(MAKECMDGOALS))
 map = $(foreach a,$2,$(call $1,$a))
 bpath = $(call relpath,$(builddir)/$1)
 tflags = _$(call bpath,$1)-$2
-prepend-unique = $(if $(filter $1,$($2)),,$2 := $1 $($2))
+reverse = $(if $1,$(call reverse,$(wordlist 2,$(words $1),$1))) $(firstword $1)
 makefile-deps = $(top-srcdir)/build.mk $(wildcard $(top-srcdir)/common.mk) \
   $(configs) $(srcdir)/Makefile
 pname = $(call relpath,$1,$(init-builddir))
@@ -135,7 +135,7 @@ $(if $(skip-deps),,-include $(builddir)/$2.d)
 cleanfiles += $(call bpath,$2.[$(subst $(space),,\
   $(sort $($3-built-suffixes) $($3-extra-suffixes)))])
 $(eval $(call tflags,$1,objs) += $(call bpath,$2.o))
-$(eval $(call prepend-unique,$(call bpath,$2/..),mkdirs))
+mkdirs += $(call bpath,$2/..)
 $(addprefix $(builddir)/$2.,$($3-built-suffixes)) : \
   $(makefile-deps) | $(call bpath,$2/..)
 $(foreach s,$($3-built-suffixes),$(eval $($s-dep) : $(builddir)/$2.$s))
@@ -143,7 +143,7 @@ undefine $2$3-$($3-flags-var)
 endef
 
 define add-bin-lib-common
-$(eval $(call prepend-unique,$(call bpath,$1/..),mkdirs))
+mkdirs += $(call bpath,$1/..)
 $(eval $(call tflags,$1,libs) := $(call map,relpath,$($1-libs)))
 $(foreach s,$(sort $($1-sources)),$(eval \
   $(call add-source,$1,$(basename $s),$(suffix $s))))
@@ -247,7 +247,7 @@ endef
 parse-build := 1
 $(eval $(call add-subdir,$(call relpath,$(init-srcdir),$(top-srcdir))))
 
-mkdirs := $(filter-out .,$(mkdirs))
+mkdirs := $(call reverse,$(sort $(filter-out .,$(mkdirs))))
 
 $(mkdirs) :
 	$(q)mkdir -p $@
