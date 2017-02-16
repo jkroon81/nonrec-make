@@ -117,11 +117,6 @@ s-dep = asm
 .c-built-suffixes := b i o s
 .c-extra-suffixes := d
 
-define newline
-
-
-endef
-
 define add-source
 $(call tflags,$2.o,$($3-flags-var)) := $(strip \
   $(common-$($3-flags-var)) \

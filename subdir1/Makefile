@@ -15,7 +15,7 @@ define phony-c-file
 endef
 
 $(builddir)/nils/gen.c : $(srcdir)/Makefile
-	$(gen)echo "$(subst $(newline),;,$(call phony-c-file))" | tr ";" "\n" > $@
+	$(gen)$(file > $@,$(call phony-c-file))
 
 $(builddir)/sven/katt.S : $(srcdir)/Makefile
 	$(gen)touch $@
