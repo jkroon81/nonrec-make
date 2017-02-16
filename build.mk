@@ -31,14 +31,14 @@ configs := $(wildcard $(addprefix $(top-srcdir)/config/,\
   $(subst -, ,$(notdir $(abs-top-builddir)))))
 
 define capture-flags
-$(foreach v,$1,$(eval $v :=))
-$(foreach f,$2,$(eval -include $f))
-$(foreach v,$1,$(eval $3-$v := $($v)))
+$(foreach v,$1,$(eval $v :=)) \
+$(foreach f,$2,$(eval -include $f)) \
+$(foreach v,$1,$(eval $3-$v := $($v))) \
 $(foreach v,$1,$(eval undefine $v))
 endef
 
-$(eval $(call capture-flags,$(flags),$(top-srcdir)/common.mk,common))
-$(eval $(call capture-flags,$(flags),$(configs),config))
+$(call capture-flags,$(flags),$(top-srcdir)/common.mk,common)
+$(call capture-flags,$(flags),$(configs),config)
 
 add-vvar = $1 = $(if $(filter $(or $V,0),0),$2,$3)
 
@@ -123,18 +123,18 @@ define newline
 endef
 
 define add-source
-$(eval $(call tflags,$2.o,$($3-flags-var)) := $(strip \
+$(call tflags,$2.o,$($3-flags-var)) := $(strip \
   $(common-$($3-flags-var)) \
   $(config-$($3-flags-var)) \
   $($($3-flags-var)) \
   $($1-$($3-flags-var)) \
   $($2$3-$($3-flags-var)) \
   $($($3-flags-env)) \
-))
+)
 $(if $(skip-deps),,-include $(builddir)/$2.d)
 cleanfiles += $(call bpath,$2.[$(subst $(space),,\
   $(sort $($3-built-suffixes) $($3-extra-suffixes)))])
-$(eval $(call tflags,$1,objs) += $(call bpath,$2.o))
+$(call tflags,$1,objs) += $(call bpath,$2.o)
 mkdirs += $(call bpath,$2/..)
 $(addprefix $(builddir)/$2.,$($3-built-suffixes)) : \
   $(makefile-deps) | $(call bpath,$2/..)
@@ -144,11 +144,11 @@ endef
 
 define add-bin-lib-common
 mkdirs += $(call bpath,$1/..)
-$(eval $(call tflags,$1,libs) := $(call map,relpath,$($1-libs)))
+$(call tflags,$1,libs) := $(call map,relpath,$($1-libs))
 $(foreach s,$(sort $($1-sources)),$(eval \
   $(call add-source,$1,$(basename $s),$(suffix $s))))
 all : $(builddir)/$1
-$(builddir)/$1 : $($(call tflags,$1,objs)) $($(call tflags,$1,libs)) \
+$(builddir)/$1 : $($(call tflags,$1,objs)) $$($(call tflags,$1,libs)) \
                  $(makefile-deps) | $(call bpath,$1/..)
 $(builddir)/$1.b : $(builddir)/$1
 	$$(objdump_v)$(OBJDUMP) -rd $$< > $$@
@@ -162,20 +162,20 @@ undefine $1-libs
 endef
 
 define add-bin
-$(eval $(call add-bin-lib-common,$1))
-$(eval $(call tflags,$1,ldflags) := $(strip \
+$(call add-bin-lib-common,$1)
+$(call tflags,$1,ldflags) := $(strip \
   $(common-ldflags) \
   $(config-ldflags) \
   $(ldflags) \
   $($1-ldflags) \
   $(LDFLAGS) \
-))
+)
 $(builddir)/$1 :
 	$$(ccld_v)$(CC) $$(_$$@-ldflags) $$(_$$@-objs) $$(_$$@-libs) -o $$@
 endef
 
 define add-lib
-$(eval $(call add-bin-lib-common,$1))
+$(call add-bin-lib-common,$1)
 $(builddir)/$1 :
 	$$(q)rm -f $$@
 	$$(ar_v)$(AR) crD $$@ $$(_$$@-objs)
@@ -237,8 +237,8 @@ $(foreach s,$(built-sources),$(eval $(builddir)/$s : \
 $(foreach b,$(bin),$(eval $(call add-bin,$b)))
 $(foreach l,$(lib),$(eval $(call add-lib,$l)))
 $(if $(filter $(top-srcdir),$(top-builddir)),,$(call add-makefile))
-$$(eval $$(call tflags,.,cleanfiles) := $$(cleanfiles))
-$$(eval $$(call tflags,.,distcleanfiles) := $$(distcleanfiles))
+$$(eval $(call tflags,.,cleanfiles) := $$(cleanfiles))
+$$(eval $(call tflags,.,distcleanfiles) := $$(distcleanfiles))
 clean     :     _clean-$(subst /,~,$(builddir))
 distclean : _distclean-$(subst /,~,$(builddir))
 $$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$$(call relpath,$1/$$s))))
