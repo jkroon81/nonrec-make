@@ -193,21 +193,7 @@ $(builddir)/Makefile : $(top-srcdir)/build.mk | $(builddir)
 distcleanfiles += $(call bpath,Makefile)
 endef
 
-define add-subdir
-srcdir := $(call relpath,$(top-srcdir)/$1)
-builddir := $1
-cleanfiles :=
-distcleanfiles :=
-bin :=
-lib :=
-subdir :=
-built-sources :=
-is-gen-makefile :=
-asflags :=
-ccflags :=
-ldflags :=
-include $$(srcdir)/Makefile
-$$(if $$(is-gen-makefile),,$$(eval $$(call parse-subdir,$1)))
+define undefine-subdir-vars
 undefine srcdir
 undefine builddir
 undefine cleanfiles
@@ -222,6 +208,15 @@ undefine ccflags
 undefine ldflags
 endef
 
+define add-subdir
+$(call undefine-subdir-vars)
+srcdir := $(call relpath,$(top-srcdir)/$1)
+builddir := $1
+include $$(srcdir)/Makefile
+$$(if $$(is-gen-makefile),,$$(eval $$(call parse-subdir,$1)))
+$(call undefine-subdir-vars)
+endef
+
 define parse-subdir
 subdir := $(if $(subdir), \
   $(patsubst %/,%,$(subdir)), \
@@ -232,8 +227,8 @@ $(foreach s,$(built-sources),$(eval $(builddir)/$s : \
 $(foreach b,$(bin),$(eval $(call add-bin,$b)))
 $(foreach l,$(lib),$(eval $(call add-lib,$l)))
 $(if $(filter $(top-srcdir),$(top-builddir)),,$(call add-makefile))
-$$(eval $(call tflags,.,cleanfiles) := $$(cleanfiles))
-$$(eval $(call tflags,.,distcleanfiles) := $$(distcleanfiles))
+$(call tflags,.,cleanfiles) := $$(cleanfiles)
+$(call tflags,.,distcleanfiles) := $$(distcleanfiles)
 clean     :     _clean-$(subst /,~,$(builddir))
 distclean : _distclean-$(subst /,~,$(builddir))
 $$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$$(call relpath,$1/$$s))))
