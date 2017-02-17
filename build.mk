@@ -75,7 +75,6 @@ vpath %.c $(top-srcdir)
 vpath %.S $(top-srcdir)
 
 AR      ?= $(CROSS_COMPILE)ar
-RANLIB  ?= $(CROSS_COMPILE)ranlib
 AS      ?= $(CROSS_COMPILE)as
 CC      ?= $(CROSS_COMPILE)gcc
 OBJDUMP ?= $(CROSS_COMPILE)objdump
@@ -83,7 +82,6 @@ OBJDUMP ?= $(CROSS_COMPILE)objdump
 add-vcmd = $(call add-vvar,$(strip $1),@echo "$2";)
 
 $(eval $(call add-vcmd,ar_v       ,  AR        $$(call pname,$$@)))
-$(eval $(call add-vcmd,ranlib_v   ,  RANLIB    $$(call pname,$$@)))
 $(eval $(call add-vcmd,as_v       ,  AS        $$(call pname,$$@)))
 $(eval $(call add-vcmd,cc_v       ,  CC        $$(call pname,$$@)))
 $(eval $(call add-vcmd,ccas_v     ,  CCAS      $$(call pname,$$@)))
@@ -173,8 +171,7 @@ define add-lib
 $(call add-bin-lib-common,$1)
 $(builddir)/$1 :
 	$$(q)rm -f $$@
-	$$(ar_v)$(AR) crD $$@ $$(_$$@-objs)
-	$$(ranlib_v)$(RANLIB) -D $$@
+	$$(ar_v)$(AR) cDrs $$@ $$(_$$@-objs)
 endef
 
 define gen-makefile
