@@ -3,7 +3,6 @@
 *.exe
 *.swp
 Makefile
-!/Makefile
 gen.c
 katt.S
 test[12345]
