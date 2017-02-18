@@ -103,9 +103,9 @@ $(eval $(call add-vcmd,gen        ,  GEN       $$(call pname,$$@)))
 %.b : %.o
 	$(objdump_v)$(OBJDUMP) -rd $< > $@
 
-b-dep = objdump
-i-dep = cpp
-s-dep = asm
+b-dep := objdump
+i-dep := cpp
+s-dep := asm
 
 .S-flags-var := asflags
 .S-flags-env := ASFLAGS
