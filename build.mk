@@ -69,7 +69,6 @@ tflags = _$(call bpath,$1)-$2
 reverse = $(if $1,$(call reverse,$(wordlist 2,$(words $1),$1))) $(firstword $1)
 makefile-deps = $(top-srcdir)/build.mk $(wildcard $(top-srcdir)/common.mk) \
   $(configs) $(srcdir)/Makefile
-pname = $(call relpath,$1,$(init-builddir))
 
 vpath %.c $(top-srcdir)
 vpath %.S $(top-srcdir)
@@ -79,29 +78,31 @@ AS      ?= $(CROSS_COMPILE)as
 CC      ?= $(CROSS_COMPILE)gcc
 OBJDUMP ?= $(CROSS_COMPILE)objdump
 
-add-vcmd = $(call add-vvar,$(strip $1),@echo "$2";)
+add-vcmd-arg = $(call add-vvar,$1,@printf "  %-9s %s\n" $2 \
+  $$(call relpath,$3,$(init-builddir));$4,$4)
+add-vcmd = $(call add-vcmd-arg,$(or $2,$1_v),$1,$(or $4,$$@),$(or $3,$$($1)))
 
-$(eval $(call add-vcmd,ar_v       ,  AR        $$(call pname,$$@)))
-$(eval $(call add-vcmd,as_v       ,  AS        $$(call pname,$$@)))
-$(eval $(call add-vcmd,cc_v       ,  CC        $$(call pname,$$@)))
-$(eval $(call add-vcmd,ccas_v     ,  CCAS      $$(call pname,$$@)))
-$(eval $(call add-vcmd,cpp_v      ,  CPP       $$(call pname,$$@)))
-$(eval $(call add-vcmd,ccld_v     ,  CCLD      $$(call pname,$$@)))
-$(eval $(call add-vcmd,objdump_v  ,  OBJDUMP   $$(call pname,$$@)))
-$(eval $(call add-vcmd,clean_v    ,  CLEAN     $$(call pname,$$(subst ~,/,$$*))))
-$(eval $(call add-vcmd,distclean_v,  DISTCLEAN $$(call pname,$$(subst ~,/,$$*))))
-$(eval $(call add-vcmd,gen        ,  GEN       $$(call pname,$$@)))
+$(eval $(call add-vcmd,AR))
+$(eval $(call add-vcmd,AS))
+$(eval $(call add-vcmd,CC))
+$(eval $(call add-vcmd,CCAS,,$$(CC)))
+$(eval $(call add-vcmd,CCLD,,$$(CC)))
+$(eval $(call add-vcmd,CPP,,$$(CC)))
+$(eval $(call add-vcmd,OBJDUMP))
+$(eval $(call add-vcmd,CLEAN,,rm -f,$$(subst ~,/,$$*)))
+$(eval $(call add-vcmd,DISTCLEAN,,rm -f,$$(subst ~,/,$$*)))
+$(eval $(call add-vcmd,GEN,gen))
 
 %.o : %.S
-	$(as_v)$(AS) $(_$@-asflags) $< -o $@
+	$(AS_v) $(_$@-asflags) $< -o $@
 %.o : %.c
-	$(cc_v)$(CC) -c -MMD -MP $(_$@-ccflags) $< -o $@
+	$(CC_v) -c -MMD -MP $(_$@-ccflags) $< -o $@
 %.s : %.c
-	$(ccas_v)$(CC) -S $(_$*.o-ccflags) $< -o $@
+	$(CCAS_v) -S $(_$*.o-ccflags) $< -o $@
 %.i : %.c
-	$(cpp_v)$(CC) -E $(_$*.o-ccflags) $< -o $@
+	$(CPP_v) -E $(_$*.o-ccflags) $< -o $@
 %.b : %.o
-	$(objdump_v)$(OBJDUMP) -rd $< > $@
+	$(OBJDUMP_v) -rd $< > $@
 
 b-dep := objdump
 i-dep := cpp
@@ -144,7 +145,7 @@ all : $(builddir)/$1
 $(builddir)/$1 : $($(call tflags,$1,objs)) $$($(call tflags,$1,libs)) \
                  $(makefile-deps) | $(call bpath,$1/..)
 $(builddir)/$1.b : $(builddir)/$1
-	$$(objdump_v)$(OBJDUMP) -rd $$< > $$@
+	$$(OBJDUMP_v) -rd $$< > $$@
 objdump : $(call bpath,$1.b)
 cleanfiles += $(call bpath,$1) $(call bpath,$1.b)
 undefine $1-sources
@@ -164,14 +165,14 @@ $(call tflags,$1,ldflags) := $(strip \
   $(LDFLAGS) \
 )
 $(builddir)/$1 :
-	$$(ccld_v)$(CC) $$(_$$@-ldflags) $$(_$$@-objs) $$(_$$@-libs) -o $$@
+	$$(CCLD_v) $$(_$$@-ldflags) $$(_$$@-objs) $$(_$$@-libs) -o $$@
 endef
 
 define add-lib
 $(call add-bin-lib-common,$1)
 $(builddir)/$1 :
 	$$(q)rm -f $$@
-	$$(ar_v)$(AR) cDrs $$@ $$(_$$@-objs)
+	$$(AR_v) cDrs $$@ $$(_$$@-objs)
 endef
 
 define gen-makefile
@@ -239,10 +240,10 @@ $(mkdirs) :
 	$(q)mkdir -p $@
 
 _clean-% :
-	$(clean_v)rm -f $(_$(subst ~,/,$*)-cleanfiles)
+	$(CLEAN_v) $(_$(subst ~,/,$*)-cleanfiles)
 
 _distclean-% : _clean-%
-	$(distclean_v)rm -f $(_$(subst ~,/,$*)-distcleanfiles)
+	$(DISTCLEAN_v) $(_$(subst ~,/,$*)-distcleanfiles)
 
 clean :             $(CURDIR)-rmdir-flags := --ignore-fail-on-non-empty
 distclean : $(abs-top-srcdir)-rmdir-flags := --ignore-fail-on-non-empty
