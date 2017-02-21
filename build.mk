@@ -219,8 +219,7 @@ subdir := $(if $(subdir), \
   $(patsubst %/,%,$(subdir)), \
   $(notdir $(call parent,$(wildcard $(srcdir)/*/Makefile))))
 cleanfiles += $(addprefix $(builddir)/,$(built-sources))
-$(foreach s,$(built-sources),$(eval $(builddir)/$s : \
-  | $(call bpath,$s/..)))
+$(foreach s,$(built-sources),$(eval $(builddir)/$s : | $(call bpath,$s/..)))
 $(foreach b,$(bin),$(eval $(call add-bin,$b)))
 $(foreach l,$(lib),$(eval $(call add-lib,$l)))
 $(if $(filter $(top-srcdir),$(top-builddir)),,$(call add-makefile))
@@ -254,7 +253,8 @@ clean distclean :
 	    fi \
 	done
 
-print-%: ; $(q)echo $*=$($*)
+print-% :
+	$(q)echo $*=$($*)
 
 print-data-base :
 	$(q)$(MAKE) -f $(init-srcdir)/Makefile -pq || true
