@@ -191,28 +191,16 @@ $(builddir)/Makefile : $(top-srcdir)/build.mk | $(builddir)
 distcleanfiles += $(call bpath,Makefile)
 endef
 
-define undefine-subdir-vars
-undefine srcdir
-undefine builddir
-undefine cleanfiles
-undefine distcleanfiles
-undefine bin
-undefine lib
-undefine subdir
-undefine built-sources
-undefine is-gen-makefile
-undefine asflags
-undefine ccflags
-undefine ldflags
-endef
+subdir-vars := srcdir builddir cleanfiles distcleanfiles bin lib subdir \
+  built-sources is-gen-makefile asflags ccflags ldflags
 
 define add-subdir
-$(call undefine-subdir-vars)
+$(foreach v,$(subdir-vars),$$(eval undefine $v))
 srcdir := $(call relpath,$(top-srcdir)/$1)
 builddir := $1
 include $$(srcdir)/Makefile
 $$(if $$(is-gen-makefile),,$$(eval $$(call parse-subdir,$1)))
-$(call undefine-subdir-vars)
+$(foreach v,$(subdir-vars),$$(eval undefine $v))
 endef
 
 define parse-subdir
