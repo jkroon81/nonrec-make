@@ -63,7 +63,6 @@ else
 mkdirs :=
 skip-deps := $(filter clean print-%,$(MAKECMDGOALS))
 
-map = $(foreach a,$2,$(call $1,$a))
 bpath = $(call relpath,$(builddir)/$1)
 tflags = _$(call bpath,$1)-$2
 reverse = $(if $1,$(call reverse,$(wordlist 2,$(words $1),$1))) $(firstword $1)
@@ -138,7 +137,7 @@ endef
 
 define add-bin-lib-common
 mkdirs += $(call bpath,$1/..)
-$(call tflags,$1,libs) := $(call map,relpath,$($1-libs))
+$(call tflags,$1,libs) := $(foreach l,$($1-libs),$(call relpath,$l))
 $(foreach s,$(sort $($1-sources)),$(eval \
   $(call add-source,$1,$(basename $s),$(suffix $s))))
 all : $(builddir)/$1
