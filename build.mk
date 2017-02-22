@@ -65,7 +65,7 @@ skip-deps := $(filter clean print-%,$(MAKECMDGOALS))
 
 bpath = $(call relpath,$(builddir)/$1)
 tflags = _$(call bpath,$1)-$2
-reverse = $(if $1,$(call reverse,$(wordlist 2,$(words $1),$1))) $(firstword $1)
+reverse = $(if $1,$(call reverse,$(wordlist 2,$(words $1),$1)) $(firstword $1))
 makefile-deps = $(top-srcdir)/build.mk $(wildcard $(top-srcdir)/common.mk) \
   $(configs) $(srcdir)/Makefile
 
