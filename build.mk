@@ -64,6 +64,7 @@ mkdirs :=
 skip-deps := $(filter clean print-%,$(MAKECMDGOALS))
 
 bpath = $(call relpath,$(builddir)/$1)
+if-arg = $(if $2,$1 $2)
 tflags = _$(call bpath,$1)-$2
 reverse = $(if $1,$(call reverse,$(wordlist 2,$(words $1),$1)) $(firstword $1))
 makefile-deps = $(top-srcdir)/build.mk $(wildcard $(top-srcdir)/common.mk) \
@@ -130,7 +131,7 @@ cleanfiles += $(call bpath,$2.[$(subst $(space),,\
 $(call tflags,$1,objs) += $(call bpath,$2.o)
 mkdirs += $(call bpath,$2/..)
 $(addprefix $(builddir)/$2.,$($3-built-suffixes)) : \
-  $(makefile-deps) | $(call bpath,$2/..)
+  $(makefile-deps) $(call if-arg,|,$(filter-out .,$(call bpath,$2/..)))
 $(foreach s,$($3-built-suffixes),$(eval $($s-dep) : $(builddir)/$2.$s))
 undefine $2$3-$($3-flags-var)
 endef
@@ -142,7 +143,7 @@ $(foreach s,$(sort $($1-sources)),$(eval \
   $(call add-source,$1,$(basename $s),$(suffix $s))))
 all : $(builddir)/$1
 $(builddir)/$1 : $($(call tflags,$1,objs)) $$($(call tflags,$1,libs)) \
-                 $(makefile-deps) | $(call bpath,$1/..)
+  $(makefile-deps) $(call if-arg,|,$(filter-out .,$(call bpath,$1/..)))
 $(builddir)/$1.b : $(builddir)/$1
 	$$(OBJDUMP_v) -rd $$< > $$@
 objdump : $(call bpath,$1.b)
@@ -227,10 +228,10 @@ $(mkdirs) :
 	$(q)mkdir -p $@
 
 _clean-% :
-	$(CLEAN_v) $(_$(subst ~,/,$*)-cleanfiles)
+	$(call if-arg,$(CLEAN_v),$(_$(subst ~,/,$*)-cleanfiles))
 
 _distclean-% : _clean-%
-	$(DISTCLEAN_v) $(_$(subst ~,/,$*)-distcleanfiles)
+	$(call if-arg,$(DISTCLEAN_v),$(_$(subst ~,/,$*)-distcleanfiles))
 
 clean :             $(CURDIR)-rmdir-flags := --ignore-fail-on-non-empty
 distclean : $(abs-top-srcdir)-rmdir-flags := --ignore-fail-on-non-empty
