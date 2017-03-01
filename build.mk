@@ -40,7 +40,8 @@ endef
 $(call capture-flags,$(flags),$(top-srcdir)/common.mk,common)
 $(call capture-flags,$(flags),$(configs),config)
 
-add-vvar = $1 = $(if $(filter $(or $V,0),0),$2,$3)
+verbose := $(if $(filter $(or $V,0),0),,1)
+add-vvar = $1 = $(if $(verbose),$3,$2)
 
 $(eval $(call add-vvar,q,@))
 
@@ -247,10 +248,9 @@ print-% :
 print-data-base :
 	$(q)$(MAKE) -f $(init-srcdir)/Makefile -pq || true
 
-$(eval $(call add-vvar,varlist,$(filter-out $(startup-vars),$(.VARIABLES)),$(.VARIABLES)))
-
 print-variables :
-	$(foreach v,$(sort $(varlist)),$(info $v=$(value $v)))
+	$(foreach v,$(sort $(if $(verbose),$(.VARIABLES),$(filter-out \
+	  $(startup-vars),$(.VARIABLES)))),$(info $v=$(value $v)))
 	@true
 
 .PHONY : all asm clean distclean cpp print-% print-data-base print-variables
