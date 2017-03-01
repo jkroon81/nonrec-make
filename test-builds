@@ -2,9 +2,11 @@
 set -e
 
 checksum_find_arg="-a -not -path '*/.git/*' "
+git_ls_files_arg="--others "
+print_db=0
 export MAKEFLAGS=-j8
 
-while getopts ":adovx" opt; do
+while getopts ":adopvx" opt; do
     case $opt in
         a)
         checksum_find_arg+="-a -not -name '*.a' "
@@ -14,6 +16,11 @@ while getopts ":adovx" opt; do
         ;;
         o)
         checksum_find_arg+="-a -not -name '*.o' "
+        ;;
+        p)
+        print_db=1
+        checksum_find_arg+="-a -not -name '*-db.txt' "
+        git_ls_files_arg+="--exclude=*-db.txt "
         ;;
         v)
         MAKEFLAGS+=" V=1"
@@ -72,6 +79,9 @@ function test_makefiles {
         make $targets
         check_arch $1 $2
         for exe in `find -name '*.exe'`; do patch_exe $exe; done
+        if [ "$print_db" -eq "1" ]; then
+            make print-data-base > $top_testdir/$(realpath $PWD --relative-to=$top_testdir | tr '/' '~')-$4-db.txt
+        fi
         popd > /dev/null
         sha256sum --check --quiet $3
     done
@@ -85,7 +95,7 @@ function test_build {
     cd $1
     for exe in `find -name '*.exe'`; do patch_exe $exe; done
     eval find -type f $checksum_find_arg | xargs sha256sum > $checksum_file
-    test_makefiles $2 $3 $checksum_file
+    test_makefiles $2 $3 $checksum_file with-O
     echo "make distclean, PWD=$(curdir PWD)"
     make distclean
     popd > /dev/null
@@ -95,7 +105,7 @@ function test_build {
     cd $1
     echo "make $targets -f `dirs -0`/Makefile, PWD=$(curdir $PWD)"
     make $targets -f `dirs -0`/Makefile
-    test_makefiles $2 $3 $checksum_file
+    test_makefiles $2 $3 $checksum_file with-dash-f
     echo "make distclean, PWD=$(curdir $PWD)"
     make distclean
     popd > /dev/null
@@ -112,7 +122,7 @@ fi
 
 echo "All $nocf files OK"
 
-cruft=`git ls-files --others`
+cruft=`git ls-files $git_ls_files_arg`
 if [ -n "$cruft" ]; then
    echo "Cruft: $cruft"
 fi
