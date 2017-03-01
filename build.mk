@@ -18,7 +18,8 @@ abs-init-srcdir ?= $(abspath $(dir $(firstword $(MAKEFILE_LIST))))
 init-srcdir := $(call relpath,$(abs-init-srcdir))
 abs-init-builddir ?= $(if $O,$(abspath $O),$(CURDIR))
 init-builddir := $(call relpath,$(abs-init-builddir))
-abs-top-builddir := $(abspath $(init-builddir)/$(call relpath,$(top-srcdir),$(init-srcdir)))
+abs-top-builddir := $(abspath $(init-builddir)/$(call relpath, \
+  $(top-srcdir),$(init-srcdir)))
 top-builddir := $(call relpath,$(abs-top-builddir))
 
 $(if $(and $O,$(filter-out $(init-builddir),$(top-builddir))), \
