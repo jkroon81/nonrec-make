@@ -246,7 +246,8 @@ print-% :
 	$(q)echo $*=$($*)
 
 print-data-base :
-	$(q)$(MAKE) -f $(init-srcdir)/Makefile -pq || true
+	$(q)$(MAKE) -f $(init-srcdir)/Makefile -pq $(if $(verbose),, \
+	  | sed -e '/^\#/d' -e '/^$$/d') || true
 
 print-variables :
 	$(foreach v,$(sort $(if $(verbose),$(.VARIABLES),$(filter-out \
