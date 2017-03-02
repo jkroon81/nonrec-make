@@ -51,12 +51,15 @@ targets := $(or $(MAKECMDGOALS),all)
 .PHONY : $(targets)
 $(wordlist 2,$(words $(targets)),$(targets)) :
 	$(q)true
+$(firstword $(targets)) : keep := MAKEFLAGS TERM
 $(firstword $(targets)) : | $(top-builddir)
-	$(q)$(if $(config-env),. $(config-env) && )$(MAKE) -C $(top-builddir) \
+	$(q)env -i $(foreach v,$(keep),$v='$($v)') $(SHELL) $(.SHELLFLAGS) \
+	  'export PATH && $(if $(config-env),. $(config-env) &&) \
+	  $(MAKE) -C $(top-builddir) $(MAKECMDGOALS) \
 	  -f $(call relpath,$(top-srcdir)/build.mk,$(top-builddir)) \
-	  $(MAKECMDGOALS) O= second-make=1 config-env= \
+	  O= second-make=1 config-env= \
 	  abs-init-srcdir=$(abs-init-srcdir) \
-	  abs-init-builddir=$(abs-init-builddir)
+	  abs-init-builddir=$(abs-init-builddir)'
 $(top-builddir) :
 	$(q)mkdir -p $@
 else
