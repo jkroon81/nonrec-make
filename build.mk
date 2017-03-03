@@ -23,8 +23,7 @@ abs-top-builddir := $(abspath $(init-builddir)/$(call relpath, \
 top-builddir := $(call relpath,$(abs-top-builddir))
 
 $(if $(and $O,$(filter-out $(init-builddir),$(top-builddir))), \
-  $(error Out-of-tree build only supported from top build directory) \
-)
+  $(error Out-of-tree build only supported from top build directory))
 
 flags := env asflags ccflags ldflags
 configs := $(wildcard $(addprefix $(top-srcdir)/config/,\
