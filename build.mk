@@ -106,6 +106,11 @@ $(eval $(call add-vcmd,GEN,gen))
 	$(CPP_v) -E $(_$*.o-ccflags) $< -o $@
 %.b : %.o
 	$(OBJDUMP_v) -rd $< > $@
+%.b : %
+	$(OBJDUMP_v) -rd $< > $@
+%.a :
+	$(q)rm -f $@
+	$(AR_v) cDrs $@ $(_$@-objs)
 
 b-dep := objdump
 i-dep := cpp
@@ -147,8 +152,6 @@ $(foreach s,$(sort $($1-sources)),$(eval \
 all : $(builddir)/$1
 $(builddir)/$1 : $($(call tflags,$1,objs)) $$($(call tflags,$1,libs)) \
   $(makefile-deps) $(call if-arg,|,$(filter-out .,$(call bpath,$1/..)))
-$(builddir)/$1.b : $(builddir)/$1
-	$$(OBJDUMP_v) -rd $$< > $$@
 objdump : $(call bpath,$1.b)
 cleanfiles += $(call bpath,$1) $(call bpath,$1.b)
 undefine $1-sources
@@ -171,12 +174,7 @@ $(builddir)/$1 :
 	$$(CCLD_v) $$(_$$@-ldflags) $$(_$$@-objs) $$(_$$@-libs) -o $$@
 endef
 
-define add-lib
-$(call add-bin-lib-common,$1)
-$(builddir)/$1 :
-	$$(q)rm -f $$@
-	$$(AR_v) cDrs $$@ $$(_$$@-objs)
-endef
+add-lib = $(call add-bin-lib-common,$1)
 
 define gen-makefile
 is-gen-makefile := 1
