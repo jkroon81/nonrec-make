@@ -22,7 +22,8 @@ abs-top-builddir := $(abspath $(init-builddir)/$(call relpath, \
   $(top-srcdir),$(init-srcdir)))
 top-builddir := $(call relpath,$(abs-top-builddir))
 
-$(if $(and $O,$(filter-out $(init-builddir),$(top-builddir))), \
+$(if $(filter-out $(call relpath,$(init-srcdir),$(top-srcdir)), \
+                  $(call relpath,$(init-builddir),$(top-builddir))), \
   $(error Out-of-tree build only supported from top build directory))
 
 flags := env asflags ccflags ldflags
