@@ -41,9 +41,7 @@ $(call capture-flags,$(flags),$(top-srcdir)/common.mk,common)
 $(call capture-flags,$(flags),$(configs),config)
 
 verbose := $(if $(filter $(or $V,0),0),,1)
-add-vvar = $1 = $(if $(verbose),$3,$2)
-
-$(eval $(call add-vvar,q,@))
+q := $(if $(verbose),,@)
 
 ifndef second-make
 targets := $(or $(MAKECMDGOALS),all)
@@ -82,9 +80,9 @@ AS      ?= $(CROSS_COMPILE)as
 CC      ?= $(CROSS_COMPILE)gcc
 OBJDUMP ?= $(CROSS_COMPILE)objdump
 
-add-vcmd-arg = $(call add-vvar,$1,@printf "  %-9s %s\n" $2 \
-  $$(call relpath,$3,$(init-builddir));$4,$4)
-add-vcmd = $(call add-vcmd-arg,$(or $2,$1_v),$1,$(or $4,$$@),$(or $3,$$($1)))
+add-vcmd-arg = $1 = $(if $(verbose),$3,@printf "  %-9s %s\n" $2 \
+  $$(call relpath,$4,$(init-builddir));$3)
+add-vcmd = $(call add-vcmd-arg,$(or $2,$1_v),$1,$(or $3,$$($1)),$(or $4,$$@))
 
 $(eval $(call add-vcmd,AR))
 $(eval $(call add-vcmd,AS))
