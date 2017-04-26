@@ -146,7 +146,7 @@ endef
 define add-bin-lib-common
 mkdirs += $(call bpath,$1/..)
 $(call tflags,$1,libs) := $(foreach l,$($1-libs),$(call relpath,$l))
-$(foreach s,$(sort $($1-sources)),$(eval \
+$(foreach s,$($1-sources),$(eval \
   $(call add-source,$1,$(basename $s),$(suffix $s))))
 all : $(builddir)/$1
 $(builddir)/$1 : $($(call tflags,$1,objs)) $$($(call tflags,$1,libs)) \
