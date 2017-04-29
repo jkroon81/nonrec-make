@@ -170,7 +170,7 @@ $(call tflags,$1,ldflags) := $(strip \
   $(LDFLAGS) \
 )
 $(builddir)/$1 :
-	$$(CCLD_v) $$(_$$@-ldflags) $$(_$$@-objs) $$(_$$@-libs) -o $$@
+	$$(CCLD_v) $$(_$$@-objs) $$(_$$@-libs) $$(_$$@-ldflags) -o $$@
 endef
 
 add-lib = $(call add-bin-lib-common,$1)
