@@ -71,6 +71,7 @@ tflags = _$(call bpath,$1)-$2
 reverse = $(if $1,$(call reverse,$(wordlist 2,$(words $1),$1)) $(firstword $1))
 makefile-deps = $(top-srcdir)/build.mk $(wildcard $(top-srcdir)/common.mk) \
   $(configs) $(srcdir)/Makefile
+map = $(foreach a,$2,$(call $1,$a))
 
 vpath %.c $(top-srcdir)
 vpath %.S $(top-srcdir)
@@ -133,8 +134,8 @@ $(call tflags,$2.o,$($3-flags-var)) := $(strip \
   $($($3-flags-env)) \
 )
 $(if $(skip-deps),,-include $(builddir)/$2.d)
-cleanfiles += $(call bpath,$2.[$(subst $(space),,\
-  $(sort $($3-built-suffixes) $($3-extra-suffixes)))])
+cleanfiles += $2.[$(subst $(space),,\
+  $(sort $($3-built-suffixes) $($3-extra-suffixes)))]
 $(call tflags,$1,objs) += $(call bpath,$2.o)
 mkdirs += $(call bpath,$2/..)
 $(addprefix $(builddir)/$2.,$($3-built-suffixes)) : \
@@ -145,14 +146,14 @@ endef
 
 define add-bin-lib-common
 mkdirs += $(call bpath,$1/..)
-$(call tflags,$1,libs) := $(foreach l,$($1-libs),$(call relpath,$l))
+$(call tflags,$1,libs) := $(call map,relpath,$($1-libs))
 $(foreach s,$($1-sources),$(eval \
   $(call add-source,$1,$(basename $s),$(suffix $s))))
 all : $(builddir)/$1
 $(builddir)/$1 : $($(call tflags,$1,objs)) $$($(call tflags,$1,libs)) \
   $(makefile-deps) $(call if-arg,|,$(filter-out .,$(call bpath,$1/..)))
 objdump : $(call bpath,$1.b)
-cleanfiles += $(call bpath,$1) $(call bpath,$1.b)
+cleanfiles += $1 $1.b
 undefine $1-sources
 undefine $1-asflags
 undefine $1-ccflags
@@ -188,7 +189,7 @@ define add-makefile
 all : $(builddir)/Makefile
 $(builddir)/Makefile : $(top-srcdir)/build.mk | $(builddir)
 	$$(gen)$$(file > $$@,$$(call gen-makefile,$(srcdir),$(builddir)))
-distcleanfiles += $(call bpath,Makefile)
+distcleanfiles += Makefile
 endef
 
 subdir-vars := srcdir builddir cleanfiles distcleanfiles bin lib subdir \
@@ -207,13 +208,13 @@ define parse-subdir
 subdir := $(if $(subdir), \
   $(patsubst %/,%,$(subdir)), \
   $(notdir $(call parent,$(wildcard $(srcdir)/*/Makefile))))
-cleanfiles += $(addprefix $(builddir)/,$(built-sources))
+cleanfiles += $(built-sources)
 $(foreach s,$(built-sources),$(eval $(builddir)/$s : | $(call bpath,$s/..)))
 $(foreach b,$(bin),$(eval $(call add-bin,$b)))
 $(foreach l,$(lib),$(eval $(call add-lib,$l)))
 $(if $(filter $(top-srcdir),$(top-builddir)),,$(call add-makefile))
-$(call tflags,.,cleanfiles) := $$(cleanfiles)
-$(call tflags,.,distcleanfiles) := $$(distcleanfiles)
+$(call tflags,.,cleanfiles) := $$(call map,bpath,$$(cleanfiles))
+$(call tflags,.,distcleanfiles) := $$(call map,bpath,$$(distcleanfiles))
 clean     :     _clean-$(subst /,~,$(builddir))
 distclean : _distclean-$(subst /,~,$(builddir))
 $$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$$(call relpath,$1/$$s))))
