@@ -143,19 +143,19 @@ endef
 
 define add-bin-lib-common
 mkdirs += $(call bpath,$1/..)
-$(call tflags,$1,libs) := $(call map,relpath,$($1-libs))
 $(foreach s,$($1-sources),$(eval \
   $(call add-source,$1,$(basename $s),$(suffix $s))))
+$(eval $(call tflags,$1,objs) += $(call map,relpath,$($1-objects)))
 all : $(builddir)/$1
-$(builddir)/$1 : $($(call tflags,$1,objs)) $$($(call tflags,$1,libs)) \
-  $(makefile-deps) $(call if-arg,|,$(filter-out .,$(call bpath,$1/..)))
+$(builddir)/$1 : $($(call tflags,$1,objs)) $(makefile-deps) \
+  $(call if-arg,|,$(filter-out .,$(call bpath,$1/..)))
 objdump : $(call bpath,$1.b)
 cleanfiles += $1 $1.b
 undefine $1-sources
 undefine $1-asflags
 undefine $1-ccflags
 undefine $1-ldflags
-undefine $1-libs
+undefine $1-objects
 endef
 
 define add-bin
@@ -168,7 +168,7 @@ $(call tflags,$1,ldflags) := $(strip \
   $(LDFLAGS) \
 )
 $(builddir)/$1 :
-	$$(CCLD_v) $$(_$$@-objs) $$(_$$@-libs) $$(_$$@-ldflags) -o $$@
+	$$(CCLD_v) $$(_$$@-objs) $$(_$$@-ldflags) -o $$@
 endef
 
 define add-lib
