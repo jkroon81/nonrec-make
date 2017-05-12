@@ -108,9 +108,6 @@ $(eval $(call add-vcmd,GEN,gen))
 	$(OBJDUMP_v) -rd $< > $@
 %.b : %
 	$(OBJDUMP_v) -rd $< > $@
-%.a :
-	$(q)rm -f $@
-	$(AR_v) cDrs $@ $(_$@-objs)
 
 b-dep := objdump
 i-dep := cpp
@@ -174,7 +171,12 @@ $(builddir)/$1 :
 	$$(CCLD_v) $$(_$$@-objs) $$(_$$@-libs) $$(_$$@-ldflags) -o $$@
 endef
 
-add-lib = $(call add-bin-lib-common,$1)
+define add-lib
+$(call add-bin-lib-common,$1)
+$(builddir)/$1 :
+	$$(q)rm -f $$@
+	$$(AR_v) cDrs $$@ $$(_$$@-objs)
+endef
 
 define gen-makefile
 is-gen-makefile := 1
