@@ -121,15 +121,18 @@ s-dep := asm
 .c-built-suffixes := b i o s
 .c-extra-suffixes := d
 
+define collect-flags
+$(call tflags,$1,$2) := $(strip \
+  $(common-$2) \
+  $(config-$2) \
+  $($2) \
+  $(foreach f,$4 $1,$($f-$2)) \
+  $($3))
+undefine $1-$2
+endef
+
 define add-source
-$(call tflags,$2.o,$($3-flags-var)) := $(strip \
-  $(common-$($3-flags-var)) \
-  $(config-$($3-flags-var)) \
-  $($($3-flags-var)) \
-  $($1-$($3-flags-var)) \
-  $($2$3-$($3-flags-var)) \
-  $($($3-flags-env)) \
-)
+$(call collect-flags,$2.o,$($3-flags-var),$($3-flags-env),$1)
 $(if $(skip-deps),,-include $(builddir)/$2.d)
 cleanfiles += $2.[$(subst $(space),,\
   $(sort $($3-built-suffixes) $($3-extra-suffixes)))]
@@ -138,7 +141,6 @@ mkdirs += $(call bpath,$2/..)
 $(addprefix $(builddir)/$2.,$($3-built-suffixes)) : \
   $(makefile-deps) $(call if-arg,|,$(filter-out .,$(call bpath,$2/..)))
 $(foreach s,$($3-built-suffixes),$(eval $($s-dep) : $(builddir)/$2.$s))
-undefine $2$3-$($3-flags-var)
 endef
 
 define add-bin-lib-common
@@ -160,13 +162,7 @@ endef
 
 define add-bin
 $(call add-bin-lib-common,$1)
-$(call tflags,$1,ldflags) := $(strip \
-  $(common-ldflags) \
-  $(config-ldflags) \
-  $(ldflags) \
-  $($1-ldflags) \
-  $(LDFLAGS) \
-)
+$(call collect-flags,$1,ldflags,LDFLAGS)
 $(builddir)/$1 :
 	$$(CCLD_v) $$(_$$@-objs) $$(_$$@-ldflags) -o $$@
 endef
