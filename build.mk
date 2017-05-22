@@ -72,9 +72,10 @@ reverse = $(if $1,$(call reverse,$(wordlist 2,$(words $1),$1)) $(firstword $1))
 makefile-deps = $(top-srcdir)/build.mk $(wildcard $(top-srcdir)/common.mk) \
   $(configs) $(srcdir)/Makefile
 map = $(foreach a,$2,$(call $1,$a))
+vpath-build := $(if $(filter-out $(top-srcdir),$(top-builddir)),1)
 
-vpath %.c $(top-srcdir)
-vpath %.S $(top-srcdir)
+$(if $(vpath-build),$(eval vpath %.c $(top-srcdir)))
+$(if $(vpath-build),$(eval vpath %.S $(top-srcdir)))
 
 AR      ?= $(CROSS_COMPILE)ar
 AS      ?= $(CROSS_COMPILE)as
@@ -210,7 +211,7 @@ cleanfiles += $(built-sources)
 $(foreach s,$(built-sources),$(eval $(builddir)/$s : | $(call bpath,$s/..)))
 $(foreach b,$(bin),$(eval $(call add-bin,$b)))
 $(foreach l,$(lib),$(eval $(call add-lib,$l)))
-$(if $(filter $(top-srcdir),$(top-builddir)),,$(call add-makefile))
+$(if $(vpath-build),$(call add-makefile))
 $(call tflags,.,cleanfiles) := $$(call map,bpath,$$(cleanfiles))
 $(call tflags,.,distcleanfiles) := $$(call map,bpath,$$(distcleanfiles))
 clean     :     _clean-$(subst /,~,$(builddir))
