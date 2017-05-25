@@ -26,19 +26,19 @@ $(if $(filter-out $(call relpath,$(init-srcdir),$(top-srcdir)), \
                   $(call relpath,$(init-builddir),$(top-builddir))), \
   $(error Out-of-tree build only supported from top build directory))
 
-flags := env asflags ccflags ldflags
 configs := $(wildcard $(addprefix $(top-srcdir)/config/,\
   $(subst -, ,$(notdir $(abs-top-builddir)))))
 
 define capture-flags
-$(foreach v,$1,$(eval $v :=)) \
-$(foreach f,$2,$(eval -include $f)) \
-$(foreach v,$1,$(eval $3-$v := $($v))) \
-$(foreach v,$1,$(eval undefine $v))
+$(eval old-vars := $(.VARIABLES)) \
+$(foreach f,$1,$(eval -include $f)) \
+$(eval new-vars := $(filter-out old-vars $(old-vars),$(.VARIABLES))) \
+$(foreach v,$(new-vars),$(eval $2-$v := $($v))$(eval undefine $v)) \
+$(foreach v,old-vars new-vars,$(eval undefine $v))
 endef
 
-$(call capture-flags,$(flags),$(top-srcdir)/common.mk,common)
-$(call capture-flags,$(flags),$(configs),config)
+$(call capture-flags,$(top-srcdir)/common.mk,common)
+$(call capture-flags,$(configs),config)
 
 verbose := $(if $(filter $(or $V,0),0),,1)
 q := $(if $(verbose),,@)
