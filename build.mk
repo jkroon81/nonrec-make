@@ -64,7 +64,6 @@ else
 .DEFAULT_GOAL := all
 mkdirs :=
 skip-deps := $(filter clean print-%,$(MAKECMDGOALS))
-
 bpath = $(call relpath,$(builddir)/$1)
 if-arg = $(if $2,$1 $2)
 tflags = _$(call bpath,$1)-$2
@@ -73,6 +72,14 @@ makefile-deps = $(top-srcdir)/build.mk $(wildcard $(top-srcdir)/common.mk) \
   $(configs) $(srcdir)/Makefile
 map = $(foreach a,$2,$(call $1,$a))
 vpath-build := $(if $(filter-out $(top-srcdir),$(top-builddir)),1)
+target-types := ld-bin ld-staticlib
+ld-target-vars := sources objects asflags ccflags ldflags
+src-fmts := S c
+subdir-vars := srcdir builddir cleanfiles distcleanfiles subdir \
+  built-sources is-gen-makefile $(ld-target-vars) $(target-types)
+add-vcmd-arg = $1 = $(if $(verbose),$3,@printf "  %-9s %s\n" $2 \
+  $$(call relpath,$4,$(init-builddir));$3)
+add-vcmd = $(call add-vcmd-arg,$(or $2,$1_v),$1,$(or $3,$$($1)),$(or $4,$$@))
 
 $(if $(vpath-build),$(eval vpath %.c $(top-srcdir)))
 $(if $(vpath-build),$(eval vpath %.S $(top-srcdir)))
@@ -81,10 +88,6 @@ AR      ?= $(CROSS_COMPILE)ar
 AS      ?= $(CROSS_COMPILE)as
 CC      ?= $(CROSS_COMPILE)gcc
 OBJDUMP ?= $(CROSS_COMPILE)objdump
-
-add-vcmd-arg = $1 = $(if $(verbose),$3,@printf "  %-9s %s\n" $2 \
-  $$(call relpath,$4,$(init-builddir));$3)
-add-vcmd = $(call add-vcmd-arg,$(or $2,$1_v),$1,$(or $3,$$($1)),$(or $4,$$@))
 
 $(eval $(call add-vcmd,AR))
 $(eval $(call add-vcmd,AS))
@@ -114,13 +117,9 @@ b-dep := objdump
 i-dep := cpp
 s-dep := asm
 
-.S-flags-var := asflags
-.S-flags-env := ASFLAGS
-.S-built-suffixes := b o
-.c-flags-var := ccflags
-.c-flags-env := CFLAGS
-.c-built-suffixes := b i o s
-.c-extra-suffixes := d
+S-built-suffixes := b o
+c-built-suffixes := b i o s
+c-extra-suffixes := d
 
 define collect-flags
 $(call tflags,$1,$2) := $(strip \
@@ -132,47 +131,67 @@ $(call tflags,$1,$2) := $(strip \
 undefine $1-$2
 endef
 
-define add-source
-$(call collect-flags,$2.o,$($3-flags-var),$($3-flags-env),$1)
+define add-ld-c-source
 $(if $(skip-deps),,-include $(builddir)/$2.d)
+$(call collect-flags,$2.o,ccflags,CFLAGS,$1)
+$(call tflags,$1,objs) += $(call bpath,$2.o)
+endef
+
+define add-ld-S-source
+$(call collect-flags,$2.o,asflags,ASFLAGS,$1)
+$(call tflags,$1,objs) += $(call bpath,$2.o)
+endef
+
+define add-ld-source
+$(if $(filter $(origin add-ld-$3-source),undefined),\
+  $(error Unknown source for '$1': $2.$3))
 cleanfiles += $2.[$(subst $(space),,\
   $(sort $($3-built-suffixes) $($3-extra-suffixes)))]
-$(call tflags,$1,objs) += $(call bpath,$2.o)
 mkdirs += $(call bpath,$2/..)
 $(addprefix $(builddir)/$2.,$($3-built-suffixes)) : \
   $(makefile-deps) $(call if-arg,|,$(filter-out .,$(call bpath,$2/..)))
 $(foreach s,$($3-built-suffixes),$(eval $($s-dep) : $(builddir)/$2.$s))
+$(call add-ld-$3-source,$1,$2)
 endef
 
-define add-bin-lib-common
+add-ld-sources = $(if $2,$(call add-ld-sources-real,$1,$2,$3,$4))
+define add-ld-sources-real
+$(eval $(call add-ld-$3-$4,$1))
+$(eval $(call add-ld-$3-sources,$1,$2))
+endef
+
+define add-ld-header
 mkdirs += $(call bpath,$1/..)
+$(foreach t,$(src-fmts),$(eval \
+  $(call add-ld-sources,$1,$(filter %.$t,$($1-sources)),$t,$2)))
 $(foreach s,$($1-sources),$(eval \
-  $(call add-source,$1,$(basename $s),$(suffix $s))))
+  $(call add-ld-source,$1,$(basename $s),$(patsubst .%,%,$(suffix $s)))))
 $(eval $(call tflags,$1,objs) += $(call map,relpath,$($1-objects)))
 all : $(builddir)/$1
 $(builddir)/$1 : $($(call tflags,$1,objs)) $(makefile-deps) \
   $(call if-arg,|,$(filter-out .,$(call bpath,$1/..)))
 objdump : $(call bpath,$1.b)
 cleanfiles += $1 $1.b
-undefine $1-sources
-undefine $1-asflags
-undefine $1-ccflags
-undefine $1-ldflags
-undefine $1-objects
 endef
 
-define add-bin
-$(call add-bin-lib-common,$1)
+define add-ld-footer
+$(foreach v,$(addprefix $1-,$(ld-target-vars)),$(eval undefine $v))
+endef
+
+define add-ld-bin
+$(call add-ld-header,$1,bin)
 $(call collect-flags,$1,ldflags,LDFLAGS)
 $(builddir)/$1 :
 	$$(CCLD_v) $$(_$$@-objs) $$(_$$@-ldflags) -o $$@
+$(call add-ld-footer,$1,bin)
 endef
 
-define add-lib
-$(call add-bin-lib-common,$1)
+define add-ld-staticlib
+$(call add-ld-header,$1,staticlib)
 $(builddir)/$1 :
 	$$(q)rm -f $$@
 	$$(AR_v) cDrs $$@ $$(_$$@-objs)
+$(call add-ld-footer,$1,staticlib)
 endef
 
 define gen-makefile
@@ -191,9 +210,6 @@ $(builddir)/Makefile : $(top-srcdir)/build.mk | $(builddir)
 distcleanfiles += Makefile
 endef
 
-subdir-vars := srcdir builddir cleanfiles distcleanfiles bin lib subdir \
-  built-sources is-gen-makefile asflags ccflags ldflags
-
 define add-subdir
 $(foreach v,$(subdir-vars),$$(eval undefine $v))
 srcdir := $(call relpath,$(top-srcdir)/$1)
@@ -209,8 +225,7 @@ subdir := $(if $(subdir), \
   $(notdir $(call parent,$(wildcard $(srcdir)/*/Makefile))))
 cleanfiles += $(built-sources)
 $(foreach s,$(built-sources),$(eval $(builddir)/$s : | $(call bpath,$s/..)))
-$(foreach b,$(bin),$(eval $(call add-bin,$b)))
-$(foreach l,$(lib),$(eval $(call add-lib,$l)))
+$(foreach t,$(target-types),$(foreach o,$($t),$(eval $(call add-$t,$o))))
 $(if $(vpath-build),$(call add-makefile))
 $(call tflags,.,cleanfiles) := $$(call map,bpath,$$(cleanfiles))
 $(call tflags,.,distcleanfiles) := $$(call map,bpath,$$(distcleanfiles))
@@ -254,7 +269,7 @@ print-variables :
 	  $(startup-vars),$(.VARIABLES)))),$(info $v=$(value $v)))
 	@true
 
-.PHONY : all asm clean distclean cpp print-% print-data-base print-variables
+.PHONY : all clean distclean print-% print-data-base print-variables
 
 endif
 endif

@@ -1,4 +1,4 @@
-bin := test2 robert/test5
+ld-bin := test2 robert/test5
 test2-sources := main2.c kalle/puh.S sven/katt.S
 test2-objects := $(top-builddir)/subdir2/libfoo.a
 test2-ccflags := -I$(top-srcdir)/subdir2
