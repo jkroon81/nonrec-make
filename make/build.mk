@@ -12,7 +12,7 @@ up-path = $(call replace,/,../,$(call down-path,$1,$2,$2))
 relpath-calc = $(patsubst %/,%,$(call up-path,$1,$2)$(call down-path,$1,$2))
 relpath-abs = $(or $(call relpath-$(if $(filter $2/%,$1/),simple,calc),$1,$2),.)
 relpath = $(call relpath-abs,$(abspath $1),$(or $(abspath $2),$(CURDIR)))
-abs-top-srcdir := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+abs-top-srcdir := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))..)
 top-srcdir := $(call relpath,$(abs-top-srcdir))
 abs-init-srcdir ?= $(abspath $(dir $(firstword $(MAKEFILE_LIST))))
 init-srcdir := $(call relpath,$(abs-init-srcdir))
@@ -54,7 +54,7 @@ $(firstword $(targets)) : | $(top-builddir)
 	$(q)env -i $(foreach v,$(keep),$v='$($v)') $(SHELL) $(.SHELLFLAGS) \
 	  'export PATH && $(if $(config-env),. $(config-env) &&) \
 	  $(MAKE) -C $(top-builddir) $(MAKECMDGOALS) \
-	  -f $(call relpath,$(top-srcdir)/build.mk,$(top-builddir)) \
+	  -f $(call relpath,$(top-srcdir)/make/build.mk,$(top-builddir)) \
 	  O= second-make=1 config-env= \
 	  abs-init-srcdir=$(abs-init-srcdir) \
 	  abs-init-builddir=$(abs-init-builddir)'
@@ -68,58 +68,21 @@ bpath = $(call relpath,$(builddir)/$1)
 if-arg = $(if $2,$1 $2)
 tflags = _$(call bpath,$1)-$2
 reverse = $(if $1,$(call reverse,$(wordlist 2,$(words $1),$1)) $(firstword $1))
-makefile-deps = $(top-srcdir)/build.mk $(wildcard $(top-srcdir)/common.mk) \
-  $(configs) $(srcdir)/Makefile
+makefile-deps = $(wildcard $(top-srcdir)/common.mk) $(mkfiles) $(configs) \
+  $(srcdir)/Makefile
 map = $(foreach a,$2,$(call $1,$a))
 vpath-build := $(if $(filter-out $(top-srcdir),$(top-builddir)),1)
-target-types := ld-bin ld-staticlib
-ld-target-vars := sources objects asflags ccflags ldflags
-src-fmts := S c
-subdir-vars := srcdir builddir cleanfiles distcleanfiles subdir \
-  built-sources is-gen-makefile $(ld-target-vars) $(target-types)
+subdir-vars = srcdir builddir cleanfiles distcleanfiles subdir \
+  built-sources is-gen-makefile $(target-types)
+mkfiles := $(wildcard $(top-srcdir)/make/*.mk)
+src-fmts := $(patsubst %-source.mk,%,$(notdir $(filter %-source.mk,$(mkfiles))))
 add-vcmd-arg = $1 = $(if $(verbose),$3,@printf "  %-9s %s\n" $2 \
   $$(call relpath,$4,$(init-builddir));$3)
 add-vcmd = $(call add-vcmd-arg,$(or $2,$1_v),$1,$(or $3,$$($1)),$(or $4,$$@))
 
-$(if $(vpath-build),$(eval vpath %.c $(top-srcdir)))
-$(if $(vpath-build),$(eval vpath %.S $(top-srcdir)))
-
-AR      ?= $(CROSS_COMPILE)ar
-AS      ?= $(CROSS_COMPILE)as
-CC      ?= $(CROSS_COMPILE)gcc
-OBJDUMP ?= $(CROSS_COMPILE)objdump
-
-$(eval $(call add-vcmd,AR))
-$(eval $(call add-vcmd,AS))
-$(eval $(call add-vcmd,CC))
-$(eval $(call add-vcmd,CCAS,,$$(CC)))
-$(eval $(call add-vcmd,CCLD,,$$(CC)))
-$(eval $(call add-vcmd,CPP,,$$(CC)))
-$(eval $(call add-vcmd,OBJDUMP))
 $(eval $(call add-vcmd,CLEAN,,rm -f,$$(subst ~,/,$$*)))
 $(eval $(call add-vcmd,DISTCLEAN,,rm -f,$$(subst ~,/,$$*)))
 $(eval $(call add-vcmd,GEN,gen))
-
-%.o : %.S
-	$(AS_v) $(_$@-asflags) $< -o $@
-%.o : %.c
-	$(CC_v) -c -MMD -MP $(_$@-ccflags) $< -o $@
-%.s : %.c
-	$(CCAS_v) -S $(_$*.o-ccflags) $< -o $@
-%.i : %.c
-	$(CPP_v) -E $(_$*.o-ccflags) $< -o $@
-%.b : %.o
-	$(OBJDUMP_v) -rd $< > $@
-%.b : %
-	$(OBJDUMP_v) -rd $< > $@
-
-b-dep := objdump
-i-dep := cpp
-s-dep := asm
-
-S-built-suffixes := b o
-c-built-suffixes := b i o s
-c-extra-suffixes := d
 
 define collect-flags
 $(call tflags,$1,$2) := $(strip \
@@ -131,81 +94,18 @@ $(call tflags,$1,$2) := $(strip \
 undefine $1-$2
 endef
 
-define add-ld-c-source
-$(if $(skip-deps),,-include $(builddir)/$2.d)
-$(call collect-flags,$2.o,ccflags,CFLAGS,$1)
-$(call tflags,$1,objs) += $(call bpath,$2.o)
-endef
-
-define add-ld-S-source
-$(call collect-flags,$2.o,asflags,ASFLAGS,$1)
-$(call tflags,$1,objs) += $(call bpath,$2.o)
-endef
-
-define add-ld-source
-$(if $(filter $(origin add-ld-$3-source),undefined),\
-  $(error Unknown source for '$1': $2.$3))
-cleanfiles += $2.[$(subst $(space),,\
-  $(sort $($3-built-suffixes) $($3-extra-suffixes)))]
-mkdirs += $(call bpath,$2/..)
-$(addprefix $(builddir)/$2.,$($3-built-suffixes)) : \
-  $(makefile-deps) $(call if-arg,|,$(filter-out .,$(call bpath,$2/..)))
-$(foreach s,$($3-built-suffixes),$(eval $($s-dep) : $(builddir)/$2.$s))
-$(call add-ld-$3-source,$1,$2)
-endef
-
-add-ld-sources = $(if $2,$(call add-ld-sources-real,$1,$2,$3,$4))
-define add-ld-sources-real
-$(eval $(call add-ld-$3-$4,$1))
-$(eval $(call add-ld-$3-sources,$1,$2))
-endef
-
-define add-ld-header
-mkdirs += $(call bpath,$1/..)
-$(foreach t,$(src-fmts),$(eval \
-  $(call add-ld-sources,$1,$(filter %.$t,$($1-sources)),$t,$2)))
-$(foreach s,$($1-sources),$(eval \
-  $(call add-ld-source,$1,$(basename $s),$(patsubst .%,%,$(suffix $s)))))
-$(eval $(call tflags,$1,objs) += $(call map,relpath,$($1-objects)))
-all : $(builddir)/$1
-$(builddir)/$1 : $($(call tflags,$1,objs)) $(makefile-deps) \
-  $(call if-arg,|,$(filter-out .,$(call bpath,$1/..)))
-objdump : $(call bpath,$1.b)
-cleanfiles += $1 $1.b
-endef
-
-define add-ld-footer
-$(foreach v,$(addprefix $1-,$(ld-target-vars)),$(eval undefine $v))
-endef
-
-define add-ld-bin
-$(call add-ld-header,$1,bin)
-$(call collect-flags,$1,ldflags,LDFLAGS)
-$(builddir)/$1 :
-	$$(CCLD_v) $$(_$$@-objs) $$(_$$@-ldflags) -o $$@
-$(call add-ld-footer,$1,bin)
-endef
-
-define add-ld-staticlib
-$(call add-ld-header,$1,staticlib)
-$(builddir)/$1 :
-	$$(q)rm -f $$@
-	$$(AR_v) cDrs $$@ $$(_$$@-objs)
-$(call add-ld-footer,$1,staticlib)
-endef
-
 define gen-makefile
 is-gen-makefile := 1
 ifndef parse-build
 abs-init-srcdir := $(abspath $1)
 abs-init-builddir := $$(if $$O,$$(abspath $$O),$$(CURDIR))
-include $(call relpath,$(abs-top-srcdir)/build.mk,$2)
+include $(call relpath,$(abs-top-srcdir)/make/build.mk,$2)
 endif
 endef
 
 define add-makefile
 all : $(builddir)/Makefile
-$(builddir)/Makefile : $(top-srcdir)/build.mk | $(builddir)
+$(builddir)/Makefile : $(top-srcdir)/make/build.mk | $(builddir)
 	$$(gen)$$(file > $$@,$$(call gen-makefile,$(srcdir),$(builddir)))
 distcleanfiles += Makefile
 endef
@@ -233,6 +133,8 @@ clean     :     _clean-$(subst /,~,$(builddir))
 distclean : _distclean-$(subst /,~,$(builddir))
 $$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$$(call relpath,$1/$$s))))
 endef
+
+$(foreach f,$(filter-out %/build.mk,$(mkfiles)),$(eval include $f))
 
 parse-build := 1
 $(eval $(call add-subdir,$(call relpath,$(init-srcdir),$(top-srcdir))))

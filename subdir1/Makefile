@@ -20,4 +20,4 @@ $(builddir)/nils/gen.c : $(srcdir)/Makefile
 $(builddir)/sven/katt.S : $(srcdir)/Makefile
 	$(gen)touch $@
 
-include $(dir $(lastword $(MAKEFILE_LIST)))../build.mk
+include $(dir $(lastword $(MAKEFILE_LIST)))../make/build.mk
