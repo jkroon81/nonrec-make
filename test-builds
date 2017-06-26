@@ -46,15 +46,6 @@ function curdir {
     realpath -m --relative-to $top_testdir $PWD
 }
 
-function patch_exe {
-    php_offset=$((0x3c))
-    ph_offset=0x$(dd if=$1 conv=swab bs=1 count=2 skip=$php_offset status=none | xxd -p | sed 's/^0*//')
-    timestamp_offset=$(($ph_offset + 8))
-    checksum_offset=$(($ph_offset + 88))
-    dd if=/dev/zero of=$1 bs=1 count=4 seek=$timestamp_offset status=none conv=notrunc
-    dd if=/dev/zero of=$1 bs=1 count=4 seek=$checksum_offset status=none conv=notrunc
-}
-
 function check_arch {
     files=$(find . -not -path './.git/*' -a -not -name test-builds -a \
                  \( -name "*.o" -o -executable -type f \) )
@@ -78,7 +69,6 @@ function test_makefiles {
         echo "make $targets, PWD=$(curdir $PWD)"
         make $targets
         check_arch $1 $2
-        for exe in `find -name '*.exe'`; do patch_exe $exe; done
         if [ "$print_db" -eq "1" ]; then
             make print-data-base > $top_testdir/$(realpath $PWD --relative-to=$top_testdir | tr '/' '~')-$4-db.txt
         fi
@@ -93,7 +83,6 @@ function test_build {
     checksum_file=`mktemp`
     pushd . > /dev/null
     cd $1
-    for exe in `find -name '*.exe'`; do patch_exe $exe; done
     eval find -type f $checksum_find_arg | xargs sha256sum > $checksum_file
     test_makefiles $2 $3 $checksum_file with-O
     echo "make distclean, PWD=$(curdir PWD)"

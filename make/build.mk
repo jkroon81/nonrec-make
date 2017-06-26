@@ -49,7 +49,7 @@ targets := $(or $(MAKECMDGOALS),all)
 .PHONY : $(targets)
 $(wordlist 2,$(words $(targets)),$(targets)) :
 	$(q)true
-$(firstword $(targets)) : keep := MAKEFLAGS TERM
+$(firstword $(targets)) : keep := MAKEFLAGS OS TERM
 $(firstword $(targets)) : | $(top-builddir)
 	$(q)env -i $(foreach v,$(keep),$v='$($v)') $(SHELL) $(.SHELLFLAGS) \
 	  'export PATH && $(if $(config-env),. $(config-env) &&) \
@@ -79,17 +79,20 @@ src-fmts := $(patsubst %-source.mk,%,$(notdir $(filter %-source.mk,$(mkfiles))))
 add-vcmd-arg = $1 = $(if $(verbose),$3,@printf "  %-9s %s\n" $2 \
   $$(call relpath,$4,$(init-builddir));$3)
 add-vcmd = $(call add-vcmd-arg,$(or $2,$1_v),$1,$(or $3,$$($1)),$(or $4,$$@))
+os := $(or $(OS),$(shell uname -o))
 
 $(eval $(call add-vcmd,CLEAN,,rm -f,$$(subst ~,/,$$*)))
 $(eval $(call add-vcmd,DISTCLEAN,,rm -f,$$(subst ~,/,$$*)))
 $(eval $(call add-vcmd,GEN,gen))
 
+collect-overrides = $($1) $(foreach o,os,$($1-$($o)))
+
 define collect-flags
 $(call tflags,$1,$2) := $(strip \
-  $(common-$2) \
-  $(config-$2) \
-  $($2) \
-  $(foreach f,$4 $1,$($f-$2)) \
+  $(call collect-overrides,common-$2) \
+  $(call collect-overrides,config-$2) \
+  $(call collect-overrides,$2) \
+  $(foreach f,$4 $1,$(call collect-overrides,$f-$2)) \
   $($3))
 undefine $1-$2
 endef
