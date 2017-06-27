@@ -1,6 +1,8 @@
 *.[abdios]
 *~
+*.dll
 *.exe
+*.so
 *.swp
 Makefile
 gen.c

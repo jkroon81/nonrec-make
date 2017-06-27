@@ -84,6 +84,7 @@ os := $(or $(OS),$(shell uname -o))
 $(eval $(call add-vcmd,CLEAN,,rm -f,$$(subst ~,/,$$*)))
 $(eval $(call add-vcmd,DISTCLEAN,,rm -f,$$(subst ~,/,$$*)))
 $(eval $(call add-vcmd,GEN,gen))
+$(eval $(call add-vcmd,LN,,ln))
 
 collect-overrides = $($1) $(foreach o,os,$($1-$($o)))
 
@@ -93,8 +94,30 @@ $(call tflags,$1,$2) := $(strip \
   $(call collect-overrides,config-$2) \
   $(call collect-overrides,$2) \
   $(foreach f,$4 $1,$(call collect-overrides,$f-$2)) \
+  $(foreach f,$4 $1,$($(call tflags,$f,$2-append))) \
   $($3))
 undefine $1-$2
+endef
+
+define add-link
+$(if $(filter $(origin $(call tflags,$1,source)),undefined),\
+  $(eval $(call tflags,$1,source) := $2)\
+    $(eval $(call add-$3link-real,$1,$2))\
+    $(eval cleanfiles += $1),\
+  $(if $(filter $($(call tflags,$1,source)),$2),,\
+    $(error $1->$2 $3link already defined as $1->$($(call tflags,$1,source)))))
+endef
+
+add-symlink = $(call add-link,$1,$2,sym)
+define add-symlink-real
+$(builddir)/$1 : $2 | $(call bpath,$1/..)
+	$$(LN_v) -sf $$(call relpath,$$<,$$(dir $$@)) $$@
+endef
+
+add-hardlink = $(call add-link,$1,$2,hard)
+define add-hardlink-real
+$(builddir)/$1 : $2 | $(call bpath,$1/..)
+	$$(LN_v) -f $$< $$@
 endef
 
 define gen-makefile
