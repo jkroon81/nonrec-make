@@ -1,10 +1,11 @@
-*.[abdios]
+*.[abcdhiosS]
 *~
 *.dll
 *.exe
 *.so
 *.swp
+*.vala
+*.vala-stamp
+*.vapi
 Makefile
-gen.c
-katt.S
-test[12345]
+test[123456]
