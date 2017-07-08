@@ -49,6 +49,7 @@ cleanfiles += $1.vala-stamp
 $(foreach t,static shared,$(eval $(call add-vala-libs,$1,$t)))
 $(eval $(call tflags,$1,ccflags-append) += $(glib-ccflags))
 $(call collect-flags,$1,valaflags,VALAFLAGS)
+$(call add-ld-sources,$1,$(patsubst %.vala,%.c,$2),c,$3)
 endef
 
 add-ld-vala-bin = $(call tflags,$1,ldflags-append) += $(glib-ldflags)

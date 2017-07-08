@@ -3,11 +3,9 @@ ld-target-vars += sources staticlibs sharedlibs ldflags
 target-types   += ld-bin ld-staticlib ld-sharedlib
 
 AR      ?= $(CROSS_COMPILE)ar
-CC      ?= $(CROSS_COMPILE)gcc
 OBJDUMP ?= $(CROSS_COMPILE)objdump
 
 $(eval $(call add-vcmd,AR))
-$(eval $(call add-vcmd,CCLD,,$$(CC)))
 $(eval $(call add-vcmd,OBJDUMP))
 
 %.b : %.o
@@ -48,7 +46,7 @@ endef
 add-ld-sources = $(if $2,$(call add-ld-sources-real,$1,$2,$3,$4))
 define add-ld-sources-real
 $(eval $(call add-ld-$3-$4,$1))
-$(eval $(call add-ld-$3-sources,$1,$2))
+$(eval $(call add-ld-$3-sources,$1,$2,$4))
 endef
 
 define add-ld-header
@@ -94,7 +92,8 @@ define add-ld-bin
 $(call add-ld-header,$1,bin)
 $(call collect-flags,$1,ldflags,LDFLAGS)
 $(builddir)/$1 :
-	$$(CCLD_v) $$(_$$@-objs) $$(_$$@-ldflags) -o $$@
+	$$(if $$(_$$@-linker),,$$(error No linker for target '$$@'))
+	$$(_$$@-linker) $$(_$$@-objs) $$(_$$@-ldflags) -o $$@
 $(call add-ld-footer,$1,bin)
 endef
 
@@ -120,6 +119,7 @@ $(eval $(call tflags,$1,ccflags-append) += -fpic)
 $(call add-ld-header,$1,sharedlib)
 $(call collect-flags,$1,ldflags,LDFLAGS)
 $(builddir)/$1 :
-	$$(CCLD_v) -shared $$(_$$@-objs) $$(_$$@-ldflags) -o $$@
+	$$(if $$(_$$@-linker),,$$(error No linker for target '$$@'))
+	$$(_$$@-linker) -shared $$(_$$@-objs) $$(_$$@-ldflags) -o $$@
 $(call add-ld-footer,$1,sharedlib)
 endef

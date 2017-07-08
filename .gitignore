@@ -8,4 +8,4 @@
 *.vala-stamp
 *.vapi
 Makefile
-test[123456]
+test?

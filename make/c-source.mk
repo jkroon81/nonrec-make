@@ -1,6 +1,7 @@
 CC ?= $(CROSS_COMPILE)gcc
 
 $(eval $(call add-vcmd,CC))
+$(eval $(call add-vcmd,CCLD,,$$(CC)))
 $(eval $(call add-vcmd,CCAS,,$$(CC)))
 $(eval $(call add-vcmd,CPP,,$$(CC)))
 
@@ -22,6 +23,8 @@ i-dep := cpp
 s-dep := asm
 
 .PHONY : asm cpp
+
+add-ld-c-sources = $(call tflags,$1,linker) ?= $$(CCLD_v)
 
 define add-ld-c-source
 $(if $(skip-deps),,-include $(builddir)/$2.d)
