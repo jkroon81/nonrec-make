@@ -11,7 +11,7 @@ $(if $(vpath-build),$(eval vpath %.c $(top-srcdir)))
 %.s : %.c
 	$(CCAS_v) -S $(_$*.o-ccflags) $< -o $@
 %.i : %.c
-	$(CPP_v) -E $(_$*.o-ccflags) $< -o $@
+	$(CPP_v) -E -P $(_$*.o-ccflags) $< -o $@
 
 subdir-vars      += ccflags
 ld-target-vars   += ccflags
