@@ -31,8 +31,7 @@ endif
 define add-ld-source
 $(if $(filter $(origin add-ld-$3-source),undefined),\
   $(error Unknown source for '$1': $2.$3))
-cleanfiles += $2.[$(subst $(space),,\
-  $(sort $($3-built-suffixes) $($3-extra-suffixes)))]
+cleanfiles += $(addprefix $2.,$($3-built-suffixes) $($3-extra-suffixes))
 mkdirs += $(call bpath,$2/..)
 $($3-built-suffixes:%=$(builddir)/$2.%) : $(makefile-deps) \
   $(call if-arg,|,$(filter-out .,$(call bpath,$2/..)))
@@ -54,7 +53,7 @@ $(foreach s,$($1-sources),$(eval \
   $(call add-ld-source,$1,$(basename $s),$(patsubst .%,%,$(suffix $s)))))
 $(foreach t,static shared,$(foreach l,$($1-$tlibs),$(eval \
   $(call add-ld-$tlib-dep,$1,$(call ld-$tlib-filename,$l),$(notdir $l),$3))))
-all : $(builddir)/$1
+all-targets += $(builddir)/$1
 $(builddir)/$1 : $($(call tflags,$1,objs)) $(makefile-deps) \
   $(call if-arg,|,$(filter-out .,$(call bpath,$1/..)))
 objdump : $(call bpath,$1.b)

@@ -76,10 +76,11 @@ subdir-vars = srcdir builddir cleanfiles distcleanfiles subdir \
   built-sources is-gen-makefile $(target-types)
 mkfiles := $(wildcard $(top-srcdir)/make/*.mk)
 src-fmts := $(patsubst %-source.mk,%,$(notdir $(filter %-source.mk,$(mkfiles))))
-add-vcmd-arg = $1 = $(if $(verbose),$3,@printf "  %-9s %s\n" $2 \
-  $$(call relpath,$4,$(init-builddir));$3)
-add-vcmd = $(call add-vcmd-arg,$(or $2,$1_v),$1,$(or $3,$$($1)),$(or $4,$$@))
+add-vcmd-arg = $1 = $(if $(verbose),$3,@printf "  %-9s %s %s\n" $2 \
+  $$(call relpath,$4,$(init-builddir)) $5;$3)
+add-vcmd = $(call add-vcmd-arg,$(or $2,$1_v),$1,$(or $3,$$($1)),$(or $4,$$@),$5)
 os := $(or $(OS),$(shell uname -o))
+percent := %
 
 $(eval $(call add-vcmd,CLEAN,,rm -f,$$(subst ~,/,$$*)))
 $(eval $(call add-vcmd,DISTCLEAN,,rm -f,$$(subst ~,/,$$*)))
@@ -164,6 +165,8 @@ $(foreach f,$(filter-out %/build.mk,$(mkfiles)),$(eval include $f))
 
 parse-build := 1
 $(eval $(call add-subdir,$(call relpath,$(init-srcdir),$(top-srcdir))))
+
+all : $(pre-targets) $(all-targets)
 
 mkdirs := $(call reverse,$(sort $(filter-out .,$(mkdirs))))
 

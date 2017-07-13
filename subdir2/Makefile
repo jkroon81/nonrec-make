@@ -8,6 +8,6 @@ test6-sources := main6.vala
 test6-valaflags := --pkg=posix
 test6-vala-staticlibs := $(builddir)/../subdir3/bar
 test6-vala-sharedlibs := $(builddir)/../subdir3/bir
-main6.o-ccflags := -Wno-unused-parameter
+main6.vala.o-ccflags := -Wno-unused-parameter
 
 include $(dir $(lastword $(MAKEFILE_LIST)))../make/build.mk
