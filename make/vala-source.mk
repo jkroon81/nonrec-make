@@ -25,7 +25,7 @@ define add-vala-lib-deps
 $(eval $(call collect-flags,$1,vala-$2libs))
 $(eval $1-$2libs += $($(call tflags,$1,vala-$2libs)))
 $(foreach l,$($(call tflags,$1,vala-$2libs)),$(eval \
-  $(call add-vala-lib-dep,$1,$l)))
+  $(call add-vala-lib-dep,$1,$(call relpath,$l))))
 endef
 
 define add-vala-lib-dep
