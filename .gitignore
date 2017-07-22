@@ -2,10 +2,10 @@
 *~
 *.dll
 *.exe
+*.fast-vapi
 *.so
 *.swp
 *.vala
-*.vala-stamp
 *.vapi
 Makefile
 test?
