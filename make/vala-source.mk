@@ -36,17 +36,23 @@ define add-vala-lib-deps
 $(eval $(call collect-flags,$1,vala-$2libs))
 $(eval $1-$2libs += $($(call tflags,$1,vala-$2libs)))
 $(foreach l,$($(call tflags,$1,vala-$2libs)),$(eval \
-  $(call add-vala-lib-dep,$1,$(call relpath,$l))))
+  $(call add-vala-lib-dep,$1,$(call relpath,$l),$3)))
 endef
 
 define add-vala-lib-dep
 $1-valaflags += --pkg=$(notdir $2) --vapidir=$(dir $2)
 $1-ccflags += -I$(dir $2)
+$(3:%.vala=$(builddir)/%.c) : $2.vapi
 endef
 
 define add-ld-vala-sources
-$(foreach t,static shared,$(eval $(call add-vala-lib-deps,$1,$t)))
+$(foreach t,static shared,$(eval $(call add-vala-lib-deps,$1,$t,$3)))
 $(eval $(call tflags,$1,fast-vapi) := $(builddir)/$(3:%.vala=%.v))
+$(builddir)/$2.vapi : $(3:%=$(builddir)/%)
+	$$(VALAC_v) $(3:%=$(builddir)/%) \
+	  --vapi=$(builddir)/$2.vapi \
+	  --header=$(builddir)/$2.h \
+	  --library=$2 $$($(call tflags,$1,valaflags))
 $(eval $(call tflags,$1,ccflags-append) += $(glib-ccflags))
 $(call collect-flags,$1,valaflags,VALAFLAGS)
 $(call add-ld-sources,$1,$2,$(patsubst %.vala,%.c,$3),c,$4)
