@@ -1,8 +1,7 @@
-*.[abcdhiosS]
+*.[abcdhiosSv]
 *~
 *.dll
 *.exe
-*.fast-vapi
 *.so
 *.swp
 *.vala

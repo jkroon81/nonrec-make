@@ -4,12 +4,12 @@ $(eval $(call add-vcmd,VALAC))
 
 subdir-vars         += valaflags vala-staticlibs vala-sharedlibs
 ld-target-vars      += valaflags vala-staticlibs vala-sharedlibs
-vala-built-suffixes := c
+vala-built-suffixes := cv
 
 glib-ccflags := $(shell pkg-config gobject-2.0 --cflags)
 glib-ldflags := $(shell pkg-config gobject-2.0 --libs)
 
-%.fast-vapi : %.vala
+%.v : %.vala
 	$(VALAC_v) --fast-vapi=$@ $<
 %.typelib : %.gir
 	$(gen)g-ir-compiler $< -o $@
@@ -28,7 +28,7 @@ $(builddir)/$2.c : $(builddir)/$2.vala $($(call tflags,$1,fast-vapi))
 	  $$($(call tflags,$1,valaflags)) \
 	  $($(call tflags,$1,fast-vapi):%=--use-fast-vapi=%) \
 	  $(builddir)/$2.vala
-cleanfiles += $2.fast-vapi $2.vala.d
+cleanfiles += $2.vala.d
 -include $(builddir)/$2.vala.d
 endef
 
@@ -46,7 +46,7 @@ endef
 
 define add-ld-vala-sources
 $(foreach t,static shared,$(eval $(call add-vala-lib-deps,$1,$t)))
-$(eval $(call tflags,$1,fast-vapi) := $(builddir)/$(3:%.vala=%.fast-vapi))
+$(eval $(call tflags,$1,fast-vapi) := $(builddir)/$(3:%.vala=%.v))
 $(eval $(call tflags,$1,ccflags-append) += $(glib-ccflags))
 $(call collect-flags,$1,valaflags,VALAFLAGS)
 $(call add-ld-sources,$1,$2,$(patsubst %.vala,%.c,$3),c,$4)
