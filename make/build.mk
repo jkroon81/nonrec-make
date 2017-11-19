@@ -146,9 +146,9 @@ $(foreach v,$(subdir-vars),$$(eval undefine $v))
 endef
 
 define parse-subdir
-subdir := $(if $(subdir), \
-  $(patsubst %/,%,$(subdir)), \
-  $(notdir $(call parent,$(wildcard $(srcdir)/*/Makefile))))
+subdir := $(if $(filter $(origin subdir),undefined), \
+  $(notdir $(call parent,$(wildcard $(srcdir)/*/Makefile))), \
+  $(patsubst %/,%,$(subdir)))
 cleanfiles += $(built-sources)
 $(foreach s,$(built-sources),$(eval $(builddir)/$s : | $(call bpath,$s/..)))
 $(foreach t,$(target-types),$(foreach o,$($t),$(eval $(call add-$t,$o))))
