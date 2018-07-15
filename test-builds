@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 checksum_find_arg="-a -not -path '*/.git/*' "
