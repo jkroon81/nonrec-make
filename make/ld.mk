@@ -2,6 +2,12 @@ subdir-vars    += ldflags
 ld-target-vars += sources staticlibs sharedlibs ldflags
 target-types   += ld-bin ld-staticlib ld-sharedlib
 
+ifeq ($(os),Windows_NT)
+subdir-vars    += dlls
+subdir-hooks   += collect-dlls
+ld-target-vars += dlls
+endif
+
 AR      ?= $(CROSS_COMPILE)ar
 OBJDUMP ?= $(CROSS_COMPILE)objdump
 
@@ -88,6 +94,11 @@ $(call collect-flags,$1,ldflags,LDFLAGS)
 $(builddir)/$1 :
 	$$(if $$(_$$@-linker),,$$(error No linker for target '$$@'))
 	$$(_$$@-linker) $$(_$$@-objs) $$(_$$@-ldflags) -o $$@
+ifeq ($(os),Windows_NT)
+$(call collect-flags,$1,dlls)
+$(builddir)/$1 : $$(call map,bpath,$$(patsubst %,lib%.dll,$$($(call tflags,$1,dlls))))
+$(call tflags,.,dlls) += $$($(call tflags,$1,dlls))
+endif
 $(call add-ld-footer,$1,bin)
 endef
 
@@ -116,3 +127,12 @@ $(builddir)/$1 :
 	$$(_$$@-linker) -shared $$(_$$@-objs) $$(_$$@-ldflags) -o $$@
 $(call add-ld-footer,$1,sharedlib)
 endef
+
+ifeq ($(os),Windows_NT)
+add-dll = $(call add-hardlink,lib$1.dll,$(mingw-sysroot)/mingw/bin/lib$1.dll)
+define collect-dlls
+mingw-sysroot := $(or $(mingw-sysroot),$(shell $(CROSS_COMPILE)gcc -print-sysroot))
+$(call tflags,.,dlls) := $(sort $($(call tflags,.,dlls)))
+$$(foreach d,$$($(call tflags,.,dlls)),$$(eval $$(call add-dll,$$d)))
+endef
+endif

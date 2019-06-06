@@ -152,6 +152,7 @@ subdir := $(if $(subdir), \
 cleanfiles += $(built-sources)
 $(foreach s,$(built-sources),$(eval $(builddir)/$s : | $(call bpath,$s/..)))
 $(foreach t,$(target-types),$(foreach o,$($t),$(eval $(call add-$t,$o))))
+$(foreach s,$(subdir-hooks),$(eval $(call $s)))
 $(if $(vpath-build),$(call add-makefile))
 $(call tflags,.,cleanfiles) := $$(call map,bpath,$$(cleanfiles))
 $(call tflags,.,distcleanfiles) := $$(call map,bpath,$$(distcleanfiles))
