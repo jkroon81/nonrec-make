@@ -68,8 +68,8 @@ bpath = $(call relpath,$(builddir)/$1)
 if-arg = $(if $2,$1 $2)
 tflags = _$(call bpath,$1)-$2
 reverse = $(if $1,$(call reverse,$(wordlist 2,$(words $1),$1)) $(firstword $1))
-makefile-deps = $(wildcard $(top-srcdir)/common.mk) $(mkfiles) $(configs) \
-  $(srcdir)/Makefile
+makefile-deps = $(wildcard $(top-srcdir)/header.mk) \
+  $(wildcard $(top-srcdir)/common.mk) $(mkfiles) $(configs) $(srcdir)/Makefile
 map = $(foreach a,$2,$(call $1,$a))
 vpath-build := $(if $(filter-out $(top-srcdir),$(top-builddir)),1)
 subdir-vars = srcdir builddir cleanfiles distcleanfiles subdir \
@@ -162,6 +162,7 @@ endef
 
 $(foreach f,$(filter-out %/build.mk,$(mkfiles)),$(eval include $f))
 
+-include $(top-srcdir)/header.mk
 parse-build := 1
 $(eval $(call add-subdir,$(call relpath,$(init-srcdir),$(top-srcdir))))
 
