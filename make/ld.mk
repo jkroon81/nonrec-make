@@ -120,6 +120,7 @@ endef
 add-ld-sharedlib = $(call add-ld-lib,$1,sharedlib)
 define add-ld-sharedlib-real
 $(eval $(call tflags,$1,ccflags-append) += -fpic)
+$(eval $(call tflags,$1,cppflags-append) += -fpic)
 $(call add-ld-header,$1,$2,sharedlib)
 $(call collect-flags,$1,ldflags,LDFLAGS)
 $(builddir)/$1 :
