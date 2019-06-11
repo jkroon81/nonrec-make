@@ -8,7 +8,7 @@ robert/test5-sources := main5.c nils/gen.c
 robert/test5-ccflags := -I$(srcdir)/../subdir2
 robert/test5-staticlibs := $(builddir)/../subdir2/foo
 shared-sources := shared.c
-built-sources := sven/katt.S nils/gen.c
+custom-built := sven/katt.S nils/gen.c
 
 define phony-c-file
 #ifndef NEEDED_DEFINE

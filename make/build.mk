@@ -73,7 +73,7 @@ makefile-deps = $(wildcard $(top-srcdir)/header.mk) \
 map = $(foreach a,$2,$(call $1,$a))
 vpath-build := $(if $(filter-out $(top-srcdir),$(top-builddir)),1)
 subdir-vars = srcdir builddir cleanfiles distcleanfiles subdir \
-  built-sources is-gen-makefile $(target-types)
+  custom-built is-gen-makefile $(target-types)
 mkfiles := $(wildcard $(top-srcdir)/make/*.mk)
 src-fmts := $(patsubst %-source.mk,%,$(notdir $(filter %-source.mk,$(mkfiles))))
 add-vcmd-arg = $1 = $(if $(verbose),$3,@printf "  %-9s %s\n" $2 \
@@ -130,6 +130,7 @@ endif
 endef
 
 define add-makefile
+mkdirs += $(builddir)
 all : $(builddir)/Makefile
 $(builddir)/Makefile : $(top-srcdir)/make/build.mk | $(builddir)
 	$$(gen)$$(file > $$@,$$(call gen-makefile,$(srcdir),$(builddir)))
@@ -149,8 +150,11 @@ define parse-subdir
 subdir := $(if $(subdir), \
   $(patsubst %/,%,$(subdir)), \
   $(notdir $(call parent,$(wildcard $(srcdir)/*/Makefile))))
-cleanfiles += $(built-sources)
-$(foreach s,$(built-sources),$(eval $(builddir)/$s : | $(call bpath,$s/..)))
+cleanfiles += $(custom-built)
+$(foreach t,$(custom-built), \
+  $(eval mkdirs += $(call bpath,$t/..)) \
+  $(eval all : $(builddir)/$t) \
+  $(eval $(builddir)/$t : | $(call bpath,$t/..)))
 $(foreach t,$(target-types),$(foreach o,$($t),$(eval $(call add-$t,$o))))
 $(foreach s,$(subdir-hooks),$(eval $(call $s)))
 $(if $(vpath-build),$(call add-makefile))
