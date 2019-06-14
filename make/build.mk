@@ -170,6 +170,9 @@ $(foreach f,$(filter-out %/build.mk,$(mkfiles)),$(eval include $f))
 parse-build := 1
 $(eval $(call add-subdir,$(call relpath,$(init-srcdir),$(top-srcdir))))
 
+$(foreach v,builddir srcdir,\
+  $(eval $v=$$(error '$v' is not valid in this context)))
+
 mkdirs := $(call reverse,$(sort $(filter-out .,$(mkdirs))))
 
 $(mkdirs) :
