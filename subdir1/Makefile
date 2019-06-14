@@ -16,10 +16,10 @@ define phony-c-file
 #endif
 endef
 
-$(builddir)/nils/gen.c : $(srcdir)/Makefile
+$(builddir)/nils/gen.c : $(srcdir)/Makefile | $(builddir)/nils
 	$(gen)$(file > $@,$(call phony-c-file))
 
-$(builddir)/sven/katt.S : $(srcdir)/Makefile
+$(builddir)/sven/katt.S : $(srcdir)/Makefile | $(builddir)/sven
 	$(gen)touch $@
 
 include $(dir $(lastword $(MAKEFILE_LIST)))../make/build.mk

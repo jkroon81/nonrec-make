@@ -153,8 +153,7 @@ subdir := $(if $(subdir), \
 cleanfiles += $(custom-built)
 $(foreach t,$(custom-built), \
   $(eval mkdirs += $(call bpath,$t/..)) \
-  $(eval all : $(builddir)/$t) \
-  $(eval $(builddir)/$t : | $(call bpath,$t/..)))
+  $(eval all : $(builddir)/$t))
 $(foreach t,$(target-types),$(foreach o,$($t),$(eval $(call add-$t,$o))))
 $(foreach s,$(subdir-hooks),$(eval $(call $s)))
 $(if $(vpath-build),$(call add-makefile))
