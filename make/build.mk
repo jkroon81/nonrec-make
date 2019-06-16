@@ -76,8 +76,13 @@ subdir-vars = srcdir builddir cleanfiles distcleanfiles subdir \
   custom-built is-gen-makefile $(target-types)
 mkfiles := $(wildcard $(top-srcdir)/make/*.mk)
 src-fmts := $(patsubst %-source.mk,%,$(notdir $(filter %-source.mk,$(mkfiles))))
-add-vcmd-arg = $1 = $(if $(verbose),$3,@printf "  %-9s %s\n" $2 \
+
+define add-vcmd-arg
+$1 = $(if $(verbose),$3,@printf "  %-9s %s\n" $2 \
   $$(call relpath,$4,$(init-builddir));$3)
+whitelist += $1 $2
+endef
+
 add-vcmd = $(call add-vcmd-arg,$(or $2,$1_v),$1,$(or $3,$$($1)),$(or $4,$$@))
 os := $(or $(OS),$(shell uname -o))
 
@@ -165,12 +170,14 @@ $$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$$(call relpath,$1/$$s))))
 endef
 
 $(foreach f,$(filter-out %/build.mk,$(mkfiles)),$(eval include $f))
+parse-build := 1
+pre-parse-vars := $(.VARIABLES)
 
 -include $(top-srcdir)/header.mk
-parse-build := 1
 $(eval $(call add-subdir,$(call relpath,$(init-srcdir),$(top-srcdir))))
 
-$(foreach v,$(subdir-vars),\
+$(foreach v,$(subdir-vars),$(eval undefine $v))
+$(foreach v,builddir srcdir,\
   $(eval $v=$$(error '$v' is not valid in this context)))
 
 mkdirs := $(call reverse,$(sort $(filter-out .,$(mkdirs))))
@@ -197,7 +204,7 @@ print-% :
 	$(q)echo $*=$($*)
 
 print-data-base :
-	$(q)$(MAKE) -f $(init-srcdir)/Makefile -pq $(if $(verbose),, \
+	$(q)$(MAKE) -f $(abs-init-srcdir)/Makefile -pq $(if $(verbose),, \
 	  | sed -e '/^\#/d' -e '/^$$/d') || true
 
 print-variables :
@@ -206,6 +213,14 @@ print-variables :
 	@true
 
 .PHONY : all clean distclean print-% print-data-base print-variables
+
+whitelist += abs-top-builddir abs-top-srcdir anc down-path gen-makefile \
+  if-arg mkdirs parent q relpath relpath-abs relpath-calc relpath-simple \
+  replace space top-builddir top-srcdir up-path verbose
+$(foreach v,\
+  $(filter-out $(whitelist) $(startup-vars),$(pre-parse-vars) pre-parse-vars),\
+  $(eval undefine $v))
+$(foreach v,config-env O second-make V,$(eval override undefine $v))
 
 endif
 endif
