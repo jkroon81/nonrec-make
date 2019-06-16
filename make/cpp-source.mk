@@ -31,3 +31,5 @@ $(if $(skip-deps),,-include $(builddir)/$2.d)
 $(call collect-flags,$2.o,cppflags,CXXFLAGS,$1)
 $(call tflags,$1,objs) += $(call bpath,$2.o)
 endef
+
+add-ld-cpp-sharedlib = $(call tflags,$1,cppflags-append) += -fpic
