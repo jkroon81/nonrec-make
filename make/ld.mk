@@ -104,7 +104,7 @@ endef
 
 add-ld-lib = $(call $0-real,$(call ld-$2-filename,$1),$1,$2)
 define add-ld-lib-real
-$(foreach f,$(ld-target-vars),$(eval $1-$f := $($2-$f))$(eval undefine $2-$f))
+$(foreach f,$(ld-target-vars),$(eval $1-$f = $(value $2-$f))$(eval undefine $2-$f))
 $(call add-ld-$3-real,$1,$2)
 endef
 

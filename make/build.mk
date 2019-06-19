@@ -33,7 +33,7 @@ define capture-flags
 $(eval old-vars := $(.VARIABLES)) \
 $(foreach f,$1,$(eval -include $f)) \
 $(eval new-vars := $(filter-out old-vars $(old-vars),$(.VARIABLES))) \
-$(foreach v,$(new-vars),$(eval $2-$v := $($v))$(eval undefine $v)) \
+$(foreach v,$(new-vars),$(eval $2-$v = $(value $v))$(eval undefine $v)) \
 $(foreach v,old-vars new-vars,$(eval undefine $v))
 endef
 
@@ -91,10 +91,10 @@ $(eval $(call add-vcmd,DISTCLEAN,,rm -f,$$(subst ~,/,$$*)))
 $(eval $(call add-vcmd,GEN,gen))
 $(eval $(call add-vcmd,LN,,ln))
 
-collect-overrides = $($1) $(foreach o,os,$($1-$($o)))
+collect-overrides = $(value $1) $(foreach o,os,$(value $1-$($o)))
 
 define collect-flags
-$(call tflags,$1,$2) := $(strip \
+$(call tflags,$1,$2) = $(strip \
   $(call collect-overrides,common-$2) \
   $(call collect-overrides,config-$2) \
   $(call collect-overrides,$2) \

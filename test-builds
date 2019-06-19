@@ -104,7 +104,7 @@ function test_build {
 
 test_build . objdump i386:x86-64
 test_build build objdump i386:x86-64
-build_oe_env=$(eval echo $(make O=build-oe -pq 2> /dev/null | grep -oP 'config-env := \K.*'))
+build_oe_env=$(eval echo $(make O=build-oe -pq 2> /dev/null | grep -oP 'config-env = \K.*'))
 if [ -e $build_oe_env ]; then
     test_build build-oe $(. $build_oe_env && which $OBJDUMP) arm
 fi
