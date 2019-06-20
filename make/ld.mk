@@ -15,9 +15,9 @@ $(eval $(call add-vcmd,AR))
 $(eval $(call add-vcmd,OBJDUMP))
 
 %.b : %.o
-	$(OBJDUMP_v) -rd $< > $@
+	$(OBJDUMP_v) -Cdr $< > $@
 %.b : %
-	$(OBJDUMP_v) -rd $< > $@
+	$(OBJDUMP_v) -Cdr $< > $@
 
 b-dep := objdump
 
