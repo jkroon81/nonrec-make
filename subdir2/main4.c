@@ -1,4 +1,4 @@
-#ifndef NEEDED_DEFINE
+#if !defined(NEEDED_COMMON_DEFINE) || !defined(NEEDED_COMMON_OS_DEFINE)
 #error need define
 #endif
 

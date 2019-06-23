@@ -11,7 +11,7 @@ shared-sources := shared.c
 custom-built := sven/katt.S nils/gen.c
 
 define phony-c-file
-#ifndef NEEDED_DEFINE
+#if !defined(NEEDED_COMMON_DEFINE) || !defined(NEEDED_COMMON_OS_DEFINE)
 #error need define
 #endif
 endef

@@ -67,8 +67,9 @@ objdump : $(call bpath,$1.b)
 cleanfiles += $1 $1.b
 endef
 
-add-ld-footer = $(foreach v,$(ld-target-vars),\
+add-ld-footer = $(foreach v,$(ld-target-vars), \
   $(eval undefine $1-$v) \
+  $(foreach o,$(overrides),$(eval undefine $1-$v-$($o))) \
   $(eval undefine $(call tflags,$1,$v-append)))
 
 add-ld-staticlib-dep = $(call tflags,$1,objs) += $2
@@ -104,7 +105,10 @@ endef
 
 add-ld-lib = $(call $0-real,$(call ld-$2-filename,$1),$1,$2)
 define add-ld-lib-real
-$(foreach f,$(ld-target-vars),$(eval $1-$f = $(value $2-$f))$(eval undefine $2-$f))
+$(foreach f,$(ld-target-vars), \
+  $(eval $1-$f = $(value $2-$f))$(eval undefine $2-$f) \
+  $(foreach o,$(overrides),$(eval $1-$f-$($o) = $(value $2-$f-$($o))) \
+                           $(eval undefine $2-$f-$($o))))
 $(call add-ld-$3-real,$1,$2)
 endef
 
