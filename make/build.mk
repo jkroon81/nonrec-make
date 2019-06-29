@@ -90,8 +90,8 @@ $(eval $(call add-vcmd,DISTCLEAN,,rm -f,$$(subst ~,/,$$*)))
 $(eval $(call add-vcmd,GEN,gen))
 $(eval $(call add-vcmd,LN,,ln))
 
-overrides := os
-collect-overrides = $(value $1) $(foreach o,$(overrides),$(value $1-$($o)))
+overrides := $(os) $(notdir $(configs))
+collect-overrides = $(value $1) $(foreach o,$(overrides),$(value $1-$o))
 
 define collect-flags
 $(call tflags,$1,$2) = $(strip \
