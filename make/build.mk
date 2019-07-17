@@ -195,7 +195,7 @@ clean :             $(CURDIR)-rmdir-flags := --ignore-fail-on-non-empty
 distclean : $(abs-top-srcdir)-rmdir-flags := --ignore-fail-on-non-empty
 clean distclean :
 	$(q)for d in $(mkdirs); do \
-	    if [ -d $$d ]; then \
+	    if [ -d $$d -a ! -h $$d ]; then \
 	        rmdir $($(CURDIR)-rmdir-flags) $$d; \
 	    fi \
 	done
