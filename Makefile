@@ -1,4 +1,5 @@
 ld-bin := test1 test7
+test1-compiler := $(top-srcdir)/custom-gcc
 test1-sources := main1.c asm.S
 test1-cflags  := $(shell pkg-config glib-2.0 --cflags) -I$(srcdir)/include
 test1-ldflags := $(shell pkg-config glib-2.0 --libs)

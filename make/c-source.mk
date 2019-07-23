@@ -1,4 +1,4 @@
-CC ?= $(CROSS_COMPILE)gcc
+CC ?= $(or $(_$@-compiler),$(CROSS_COMPILE)gcc)
 
 $(eval $(call add-vcmd,CC))
 $(eval $(call add-vcmd,CCLD,,$$(CC)))
@@ -15,7 +15,7 @@ $(if $(vpath-build),$(eval vpath %.c $(top-srcdir)))
 	$(CPP_v) -E -P $(_$*.o-cflags) $< -o $@
 
 subdir-vars      += cflags
-ld-target-vars   += cflags
+ld-target-vars   += compiler cflags
 c-built-suffixes := b i o s
 c-extra-suffixes := d
 
@@ -24,13 +24,17 @@ s-dep := asm
 
 .PHONY : asm cpp
 
-add-ld-c-sources = $(call tflags,$1,linker) ?= $$(CCLD_v)
+define add-ld-c-sources
+$(call tflags,$1,compiler) ?= $($1-compiler)
+$(call tflags,$1,linker) ?= $$(CCLD_v)
+endef
 
 define add-ld-c-source
 $(if $(skip-deps),,-include $(builddir)/$2.d)
 $(call collect-flags,$2.o,cflags,CFLAGS,$1)
 $(call tflags,$1,objs) += $(call bpath,$2.o)
 $(call bpath,$2.i) $(call bpath,$2.s) : $(call bpath,$2.o)
+$(call tflags,$2.o,compiler) ?= $($1-compiler)
 endef
 
 add-ld-c-sharedlib = $(call tflags,$1,cflags-append) += -fpic
