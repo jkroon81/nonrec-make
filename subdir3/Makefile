@@ -4,7 +4,7 @@ bar-sources := bar.vala
 bar-valaflags := --pkg=posix
 bir-sources := bir.vala
 bir-valaflags := --pkg=posix
-bar.o-ccflags := -Wno-unused-parameter
-bir.o-ccflags := -Wno-unused-parameter
+bar.o-ccflags := -Wno-unused-parameter -Wno-unused-variable
+bir.o-ccflags := -Wno-unused-parameter -Wno-unused-variable
 
 include $(dir $(lastword $(MAKEFILE_LIST)))../make/build.mk
