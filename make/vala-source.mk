@@ -6,7 +6,7 @@ subdir-vars         += valaflags vala-staticlibs vala-sharedlibs
 ld-target-vars      += valaflags vala-staticlibs vala-sharedlibs
 vala-built-suffixes := c
 
-glib-ccflags := $(shell pkg-config gobject-2.0 --cflags)
+glib-cflags  := $(shell pkg-config gobject-2.0 --cflags)
 glib-ldflags := $(shell pkg-config gobject-2.0 --libs)
 
 %.typelib : %.gir
@@ -35,7 +35,7 @@ endef
 
 define add-vala-lib-dep
 $1-valaflags += --pkg=$3 --vapidir=$(dir $2)
-$1-ccflags += -I$(dir $2)
+$1-cflags += -I$(dir $2)
 $(builddir)/$1.vala-stamp : $2.vala-stamp
 endef
 
@@ -45,7 +45,7 @@ $(builddir)/$1.vala-stamp : $(3:%=$(builddir)/%) $(makefile-deps)
 	$(q)touch $$@
 cleanfiles += $1.vala-stamp
 $(foreach t,static shared,$(eval $(call add-vala-lib-deps,$1,$t)))
-$(eval $(call tflags,$1,ccflags-append) += $(glib-ccflags))
+$(eval $(call tflags,$1,cflags-append) += $(glib-cflags))
 $(call collect-flags,$1,valaflags,VALAFLAGS)
 $(call add-ld-sources,$1,$2,$(patsubst %.vala,%.c,$3),c,$4)
 endef

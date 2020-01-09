@@ -8,14 +8,14 @@ $(eval $(call add-vcmd,CPP,,$$(CC)))
 $(if $(vpath-build),$(eval vpath %.c $(top-srcdir)))
 
 %.o : %.c
-	$(CC_v) -c -MMD -MP $(_$@-ccflags) $< -o $@
+	$(CC_v) -c -MMD -MP $(_$@-cflags) $< -o $@
 %.s : %.c
-	$(CCAS_v) -S $(_$*.o-ccflags) $< -o $@
+	$(CCAS_v) -S $(_$*.o-cflags) $< -o $@
 %.i : %.c
-	$(CPP_v) -E -P $(_$*.o-ccflags) $< -o $@
+	$(CPP_v) -E -P $(_$*.o-cflags) $< -o $@
 
-subdir-vars      += ccflags
-ld-target-vars   += ccflags
+subdir-vars      += cflags
+ld-target-vars   += cflags
 c-built-suffixes := b i o s
 c-extra-suffixes := d
 
@@ -28,9 +28,9 @@ add-ld-c-sources = $(call tflags,$1,linker) ?= $$(CCLD_v)
 
 define add-ld-c-source
 $(if $(skip-deps),,-include $(builddir)/$2.d)
-$(call collect-flags,$2.o,ccflags,CFLAGS,$1)
+$(call collect-flags,$2.o,cflags,CFLAGS,$1)
 $(call tflags,$1,objs) += $(call bpath,$2.o)
 $(call bpath,$2.i) $(call bpath,$2.s) : $(call bpath,$2.o)
 endef
 
-add-ld-c-sharedlib = $(call tflags,$1,ccflags-append) += -fpic
+add-ld-c-sharedlib = $(call tflags,$1,cflags-append) += -fpic
