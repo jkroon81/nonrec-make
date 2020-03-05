@@ -100,7 +100,7 @@ $(call collect-flags,$1,dlls)
 $(builddir)/$1 : $$(call map,bpath,$$(patsubst %,lib%.dll,$$($(call tflags,$1,dlls))))
 $(call tflags,.,dlls) += $$($(call tflags,$1,dlls))
 endif
-$(call add-ld-footer,$1,bin)
+$(call add-ld-footer,$1)
 endef
 
 add-ld-lib = $(call $0-real,$(call ld-$2-filename,$1),$1,$2)
@@ -118,7 +118,7 @@ $(call add-ld-header,$1,$2,staticlib)
 $(builddir)/$1 :
 	$$(q)rm -f $$@
 	$$(AR_v) cDrs $$@ $$(_$$@-objs)
-$(call add-ld-footer,$1,staticlib)
+$(call add-ld-footer,$1)
 endef
 
 add-ld-sharedlib = $(call add-ld-lib,$1,sharedlib)
@@ -128,7 +128,7 @@ $(call collect-flags,$1,ldflags,LDFLAGS)
 $(builddir)/$1 :
 	$$(if $$(_$$@-linker),,$$(error No linker for target '$$@'))
 	$$(_$$@-linker) -shared $$(_$$@-objs) $$(_$$@-ldflags) -o $$@
-$(call add-ld-footer,$1,sharedlib)
+$(call add-ld-footer,$1)
 endef
 
 ifeq ($(os),Windows_NT)
