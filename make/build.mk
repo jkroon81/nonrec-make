@@ -176,7 +176,6 @@ pre-parse-vars := $(.VARIABLES)
 -include $(top-srcdir)/header.mk
 $(eval $(call add-subdir,$(call relpath,$(init-srcdir),$(top-srcdir))))
 
-$(foreach v,$(subdir-vars),$(eval undefine $v))
 $(foreach v,builddir srcdir,\
   $(eval $v=$$(error '$v' is not valid in this context)))
 
