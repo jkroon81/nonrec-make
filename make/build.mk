@@ -162,8 +162,8 @@ $(foreach t,$(custom-built), \
 $(foreach t,$(target-types),$(foreach o,$($t),$(eval $(call add-$t,$o))))
 $(foreach s,$(subdir-hooks),$(eval $(call $s)))
 $(if $(vpath-build),$(call add-makefile))
-$(call tflags,.,cleanfiles) := $$(call map,bpath,$$(cleanfiles))
-$(call tflags,.,distcleanfiles) := $$(call map,bpath,$$(distcleanfiles))
+$(call tflags,.,cleanfiles) := $$(cleanfiles)
+$(call tflags,.,distcleanfiles) := $$(distcleanfiles)
 clean     :     _clean-$(subst /,~,$(builddir))
 distclean : _distclean-$(subst /,~,$(builddir))
 $$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$$(call relpath,$1/$$s))))
@@ -185,10 +185,12 @@ $(mkdirs) :
 	$(q)mkdir -p $@
 
 _clean-% :
-	$(call if-arg,$(CLEAN_v),$(_$(subst ~,/,$*)-cleanfiles))
+	$(call if-arg,$(CLEAN_v),$(addprefix $(filter-out ./,\
+	  $(subst ~,/,$*)/),$(_$(subst ~,/,$*)-cleanfiles)))
 
 _distclean-% : _clean-%
-	$(call if-arg,$(DISTCLEAN_v),$(_$(subst ~,/,$*)-distcleanfiles))
+	$(call if-arg,$(DISTCLEAN_v),$(addprefix $(filter-out ./,\
+	  $(subst ~,/,$*)/),$(_$(subst ~,/,$*)-distcleanfiles)))
 
 clean :             $(CURDIR)-rmdir-flags := --ignore-fail-on-non-empty
 distclean : $(abs-top-srcdir)-rmdir-flags := --ignore-fail-on-non-empty
