@@ -202,7 +202,8 @@ clean distclean :
 	done
 
 print-% :
-	$(q)echo $*=$($*)
+	$(info $*=$(value $*))
+	@true
 
 print-data-base :
 	$(q)$(MAKE) -f $(abs-init-srcdir)/Makefile -pq $(if $(verbose),, \
