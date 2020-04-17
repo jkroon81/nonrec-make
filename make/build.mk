@@ -1,7 +1,7 @@
 ifndef parse-build
 cmdline-vars := $(foreach v,$(MAKEOVERRIDES),$(word 1,$(subst =, ,$v)))
 startup-vars := $(filter-out $(cmdline-vars),$(.VARIABLES)) startup-vars
-MAKEFLAGS := --no-builtin-rules --no-builtin-variables --no-print-directory
+MAKEFLAGS = --no-builtin-rules --no-builtin-variables --no-print-directory
 relpath-simple = $(patsubst /%,%,$(patsubst $2%,%,$1))
 parent = $(patsubst %/,%,$(dir $1))
 anc = $(if $(patsubst $3/%,,$1/ $2/),$(call anc,$1,$2,$(call parent,$3)),$3)
@@ -45,11 +45,11 @@ q := $(if $(verbose),,@)
 
 ifndef second-make
 targets := $(or $(MAKECMDGOALS),all)
-.DEFAULT_GOAL := $(targets)
+.DEFAULT_GOAL = $(targets)
 .PHONY : $(targets)
 $(wordlist 2,$(words $(targets)),$(targets)) :
 	$(q)true
-$(firstword $(targets)) : keep := MAKEFLAGS TERM
+$(firstword $(targets)) : keep = MAKEFLAGS TERM
 $(firstword $(targets)) : | $(top-builddir)
 	$(q)env -i $(foreach v,$(keep),$v='$($v)') $(SHELL) $(.SHELLFLAGS) \
 	  'export PATH && $(if $(config-env),. $(config-env) &&) \
@@ -61,8 +61,8 @@ $(firstword $(targets)) : | $(top-builddir)
 $(top-builddir) :
 	$(q)mkdir -p $@
 else
-.DEFAULT_GOAL := all
-mkdirs :=
+.DEFAULT_GOAL = all
+mkdirs =
 skip-deps := $(filter clean print-%,$(MAKECMDGOALS))
 bpath = $(call relpath,$(builddir)/$1)
 if-arg = $(if $2,$1 $2)
@@ -103,7 +103,7 @@ endef
 
 define add-link
 $(if $(filter $(origin $(call tflags,$1,source)),undefined),\
-  $(eval $(call tflags,$1,source) := $2)\
+  $(eval $(call tflags,$1,source) = $2)\
     $(eval $(call add-$3link-real,$1,$2))\
     $(eval cleanfiles += $1),\
   $(if $(filter $($(call tflags,$1,source)),$2),,\
@@ -123,9 +123,9 @@ $(builddir)/$1 : $2 | $(call bpath,$1/..)
 endef
 
 define gen-makefile
-is-gen-makefile := 1
+is-gen-makefile = 1
 ifndef parse-build
-abs-init-srcdir := $(abspath $1)
+abs-init-srcdir = $(abspath $1)
 abs-init-builddir := $$(if $$O,$$(abspath $$O),$$(CURDIR))
 include $(call relpath,$(abs-top-srcdir)/make/build.mk,$2)
 endif
@@ -167,7 +167,7 @@ $$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$$(call relpath,$1/$$s))))
 endef
 
 $(foreach f,$(filter-out %/build.mk,$(mkfiles)),$(eval include $f))
-parse-build := 1
+parse-build = 1
 pre-parse-vars := $(.VARIABLES)
 
 -include $(top-srcdir)/header.mk
@@ -189,8 +189,8 @@ _distclean-% : _clean-%
 	$(call if-arg,$(DISTCLEAN_v),$(addprefix $(filter-out ./,\
 	  $(subst ~,/,$*)/),$(_$(subst ~,/,$*)-distcleanfiles)))
 
-clean :             $(CURDIR)-rmdir-flags := --ignore-fail-on-non-empty
-distclean : $(abs-top-srcdir)-rmdir-flags := --ignore-fail-on-non-empty
+clean :             $(CURDIR)-rmdir-flags = --ignore-fail-on-non-empty
+distclean : $(abs-top-srcdir)-rmdir-flags = --ignore-fail-on-non-empty
 clean distclean :
 	$(q)for d in $(mkdirs); do \
 	    if [ -d $$d -a ! -h $$d ]; then \

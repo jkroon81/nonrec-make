@@ -1,2 +1,2 @@
-asflags := -g
-cflags := -g -O0
+asflags = -g
+cflags = -g -O0

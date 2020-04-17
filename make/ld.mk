@@ -19,7 +19,7 @@ $(eval $(call add-vcmd,OBJDUMP))
 %.b : %
 	$(OBJDUMP_v) -Cdr $< > $@
 
-b-dep := objdump
+b-dep = objdump
 
 .PHONY : objdump
 

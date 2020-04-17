@@ -1,4 +1,4 @@
-custom-built := test8
+custom-built = test8
 
 $(builddir)/test8 : $(srcdir)/Makefile | $(builddir)
 	$(gen)touch $@

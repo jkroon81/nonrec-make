@@ -2,9 +2,9 @@ VALAC ?= valac
 
 $(eval $(call add-vcmd,VALAC,,,$$(@:%.vala-stamp=%)))
 
-subdir-vars         += valaflags vala-staticlibs vala-sharedlibs
-ld-target-vars      += valaflags vala-staticlibs vala-sharedlibs
-vala-built-suffixes := c
+subdir-vars        += valaflags vala-staticlibs vala-sharedlibs
+ld-target-vars     += valaflags vala-staticlibs vala-sharedlibs
+vala-built-suffixes = c
 
 gobject-cflags  := $(shell pkg-config gobject-2.0 --cflags)
 gobject-ldflags := $(shell pkg-config gobject-2.0 --libs)

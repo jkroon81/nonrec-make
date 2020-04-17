@@ -14,13 +14,13 @@ $(if $(vpath-build),$(eval vpath %.c $(top-srcdir)))
 %.i : %.c
 	$(CPP_v) -E -P $(_$*.o-cflags) $< -o $@
 
-subdir-vars      += cflags
-ld-target-vars   += cflags
-c-built-suffixes := b i o s
-c-extra-suffixes := d
+subdir-vars     += cflags
+ld-target-vars  += cflags
+c-built-suffixes = b i o s
+c-extra-suffixes = d
 
-i-dep := cpp
-s-dep := asm
+i-dep = cpp
+s-dep = asm
 
 .PHONY : asm cpp
 
