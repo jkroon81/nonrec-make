@@ -131,8 +131,10 @@ $(call add-ld-footer,$1)
 endef
 
 ifeq ($(os),Windows_NT)
-mingw-sysroot := $(shell $(CROSS_COMPILE)gcc -print-sysroot)
-add-dll = $(call add-hardlink,lib$1.dll,$(mingw-sysroot)/mingw/bin/lib$1.dll)
+define add-dll
+mingw-sysroot := $(or $(mingw-sysroot),$(shell $(CROSS_COMPILE)gcc -print-sysroot)/)
+$(call add-hardlink,lib$1.dll,$$(mingw-sysroot)mingw/bin/lib$1.dll)
+endef
 define collect-dlls
 $(call tflags,.,dlls) := $(sort $($(call tflags,.,dlls)))
 $$(foreach d,$$($(call tflags,.,dlls)),$$(eval $$(call add-dll,$$d)))
