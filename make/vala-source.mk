@@ -6,8 +6,8 @@ subdir-vars         += valaflags vala-staticlibs vala-sharedlibs
 ld-target-vars      += valaflags vala-staticlibs vala-sharedlibs
 vala-built-suffixes := c
 
-glib-cflags  := $(shell pkg-config gobject-2.0 --cflags)
-glib-ldflags := $(shell pkg-config gobject-2.0 --libs)
+gobject-cflags  := $(shell pkg-config gobject-2.0 --cflags)
+gobject-ldflags := $(shell pkg-config gobject-2.0 --libs)
 
 %.typelib : %.gir
 	$(gen)g-ir-compiler $< -o $@
@@ -45,12 +45,12 @@ $(builddir)/$1.vala-stamp : $(3:%=$(builddir)/%) $(makefile-deps)
 	$(q)touch $$@
 cleanfiles += $1.vala-stamp
 $(foreach t,static shared,$(eval $(call add-vala-lib-deps,$1,$t)))
-$(eval $(call tflags,$1,cflags-append) += $(glib-cflags))
+$(eval $(call tflags,$1,cflags-append) += $(gobject-cflags))
 $(call collect-flags,$1,valaflags,VALAFLAGS)
 $(call add-ld-sources,$1,$2,$(patsubst %.vala,%.c,$3),c,$4)
 endef
 
-add-ld-vala-bin = $(call tflags,$1,ldflags-append) += $(glib-ldflags)
+add-ld-vala-bin = $(call tflags,$1,ldflags-append) += $(gobject-ldflags)
 
 add-ld-vala-staticlib = $(call add-ld-vala-lib,$1,$2,static)
 
@@ -67,7 +67,7 @@ $(call add-ld-vala-$3lib-$(os),$1,$2)
 endef
 
 define add-ld-vala-sharedlib-Windows_NT
-$(call tflags,$1,ldflags-append) += $(glib-ldflags)
+$(call tflags,$1,ldflags-append) += $(gobject-ldflags)
 endef
 
 define add-vala-gir
