@@ -95,10 +95,7 @@ collect-overrides = $(value $1) $(foreach o,$(overrides),$(value $1-$o))
 
 define collect-flags
 $(call tflags,$1,$2) = $(strip \
-  $(call collect-overrides,common-$2) \
-  $(call collect-overrides,config-$2) \
-  $(call collect-overrides,$2) \
-  $(foreach f,$4 $1,$(call collect-overrides,$f-$2)) \
+  $(call map,collect-overrides,common-$2 config-$2 $2 $4-$2 $1-$2) \
   $(foreach f,$4 $1,$($(call tflags,$f,$2-append))) \
   $($3))
 undefine $1-$2
