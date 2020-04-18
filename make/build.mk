@@ -37,7 +37,6 @@ $(foreach v,$(new-vars),$(eval $2-$v = $(value $v))$(eval undefine $v)) \
 $(foreach v,old-vars new-vars,$(eval undefine $v))
 endef
 
-$(call capture-flags,$(top-srcdir)/common.mk,common)
 $(call capture-flags,$(configs),config)
 
 verbose := $(if $(filter $(or $V,0),0),,1)
@@ -165,6 +164,8 @@ clean     :     _clean-$(subst /,~,$(builddir))
 distclean : _distclean-$(subst /,~,$(builddir))
 $$(foreach s,$$(subdir),$$(eval $$(call add-subdir,$$(call relpath,$1/$$s))))
 endef
+
+$(call capture-flags,$(top-srcdir)/common.mk,common)
 
 $(foreach f,$(filter-out %/build.mk,$(mkfiles)),$(eval include $f))
 parse-build = 1
