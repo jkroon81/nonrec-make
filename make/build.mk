@@ -67,14 +67,15 @@ bpath = $(call relpath,$(builddir)/$1)
 if-arg = $(if $2,$1 $2)
 tflags = _$(call bpath,$1)-$2
 reverse = $(if $1,$(call reverse,$(wordlist 2,$(words $1),$1)) $(firstword $1))
-makefile-deps = $(wildcard $(top-srcdir)/header.mk) \
-  $(wildcard $(top-srcdir)/common.mk) $(mkfiles) $(configs) $(srcdir)/Makefile
 map = $(foreach a,$2,$(call $1,$a))
 vpath-build := $(if $(filter-out $(top-srcdir),$(top-builddir)),1)
 subdir-vars = srcdir builddir cleanfiles distcleanfiles subdir \
   custom-built is-gen-makefile $(target-types)
 mkfiles := $(wildcard $(top-srcdir)/make/*.mk)
 src-fmts := $(patsubst %-source.mk,%,$(notdir $(filter %-source.mk,$(mkfiles))))
+makefile-deps-static := $(wildcard $(top-srcdir)/header.mk $(top-srcdir)/common.mk) \
+  $(mkfiles) $(configs)
+makefile-deps = $(makefile-deps-static) $(srcdir)/Makefile
 
 define add-vcmd-arg
 $1 = $(if $(verbose),$3,@printf "  %-9s %s\n" $2 \
