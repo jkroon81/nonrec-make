@@ -60,8 +60,9 @@ $(firstword $(targets)) : | $(top-builddir)
 $(top-builddir) :
 	$(q)mkdir -p $@
 else
+-load make/nrmake.so
 .DEFAULT_GOAL = all
-mkdirs =
+mkdirs = make
 skip-deps := $(filter clean print-%,$(MAKECMDGOALS))
 bpath = $(call relpath,$(builddir)/$1)
 if-arg = $(if $2,$1 $2)
@@ -89,6 +90,7 @@ $(eval $(call add-vcmd,CLEAN,,rm -f,$$(subst ~,/,$$*)))
 $(eval $(call add-vcmd,DISTCLEAN,,rm -f,$$(subst ~,/,$$*)))
 $(eval $(call add-vcmd,GEN,gen))
 $(eval $(call add-vcmd,LN,,ln))
+$(eval $(call add-vcmd,HOSTCC,,gcc))
 
 overrides := $(os) $(notdir $(configs))
 collect-overrides = $($1) $(foreach o,$(overrides),$($1-$o))
@@ -149,9 +151,7 @@ $(foreach v,$(subdir-vars),$$(eval undefine $v))
 endef
 
 define parse-subdir
-subdir := $(if $(subdir), \
-  $(patsubst %/,%,$(subdir)), \
-  $(notdir $(call parent,$(wildcard $(srcdir)/*/Makefile))))
+subdir := $(if $(subdir),$(patsubst %/,%,$(subdir)),$(nrmake_subdir $(srcdir)))
 cleanfiles += $(custom-built)
 $(foreach t,$(custom-built), \
   $(eval mkdirs += $(call bpath,$t/..)) \
@@ -193,7 +193,9 @@ _distclean-% : _clean-%
 
 clean :             $(CURDIR)-rmdir-flags = --ignore-fail-on-non-empty
 distclean : $(abs-top-srcdir)-rmdir-flags = --ignore-fail-on-non-empty
+distclean : cleanfiles = make/nrmake.so
 clean distclean :
+	$(q)$(call if-arg,rm -f,$(cleanfiles))
 	$(q)for d in $(mkdirs); do \
 	    if [ -d $$d -a ! -h $$d ]; then \
 	        rmdir $($(CURDIR)-rmdir-flags) $$d; \
@@ -212,6 +214,9 @@ print-variables :
 	$(foreach v,$(sort $(if $(verbose),$(.VARIABLES),$(filter-out \
 	  $(startup-vars),$(.VARIABLES)))),$(info $v=$(value $v)))
 	@true
+
+make/nrmake.so: make/nrmake.c | make
+	$(HOSTCC_v) -shared -fPIC $< -o $@
 
 .PHONY : all clean distclean print-% print-data-base print-variables
 
