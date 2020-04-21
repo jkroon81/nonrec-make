@@ -42,25 +42,39 @@ $(call capture-flags,$(configs),config)
 verbose := $(if $(filter $(or $V,0),0),,1)
 q := $(if $(verbose),,@)
 
+define add-vcmd-arg
+$1 = $(if $(verbose),$3,@printf "  %-9s %s\n" $2 \
+  $$(call relpath,$4,$(init-builddir));$3)
+whitelist += $1 $2
+endef
+
+add-vcmd = $(call add-vcmd-arg,$(or $2,$1_v),$1,$(or $3,$$($1)),$(or $4,$$@))
+
+$(eval $(call add-vcmd,HOSTCC,,gcc))
+
+-load make/nrmake.so
+
+make/nrmake.so: make/nrmake.c | make
+	$(HOSTCC_v) -shared -fPIC $< -o $@
+
+$(nrmake_clearenv MAKEFLAGS,TERM,PATH)
+
 ifndef second-make
 targets := $(or $(MAKECMDGOALS),all)
 .DEFAULT_GOAL = $(targets)
 .PHONY : $(targets)
 $(wordlist 2,$(words $(targets)),$(targets)) :
 	$(q)true
-$(firstword $(targets)) : keep = MAKEFLAGS TERM
 $(firstword $(targets)) : | $(top-builddir)
-	$(q)env -i $(foreach v,$(keep),$v='$($v)') $(SHELL) $(.SHELLFLAGS) \
-	  'export PATH && $(if $(config-env),. $(config-env) &&) \
+	$(q)export PATH && $(if $(config-env),. $(config-env) &&) \
 	  $(MAKE) -C $(top-builddir) $(MAKECMDGOALS) \
 	  -f $(call relpath,$(top-srcdir)/make/build.mk,$(top-builddir)) \
 	  O= second-make=1 config-env= os=$(or $(OS),$(shell uname -o)) \
 	  abs-init-srcdir=$(abs-init-srcdir) \
-	  abs-init-builddir=$(abs-init-builddir)'
+	  abs-init-builddir=$(abs-init-builddir)
 $(top-builddir) :
 	$(q)mkdir -p $@
 else
--load make/nrmake.so
 .DEFAULT_GOAL = all
 mkdirs = make
 skip-deps := $(filter clean print-%,$(MAKECMDGOALS))
@@ -78,19 +92,10 @@ makefile-deps-static := $(wildcard $(top-srcdir)/header.mk $(top-srcdir)/common.
   $(mkfiles) $(configs)
 makefile-deps = $(makefile-deps-static) $(srcdir)/Makefile
 
-define add-vcmd-arg
-$1 = $(if $(verbose),$3,@printf "  %-9s %s\n" $2 \
-  $$(call relpath,$4,$(init-builddir));$3)
-whitelist += $1 $2
-endef
-
-add-vcmd = $(call add-vcmd-arg,$(or $2,$1_v),$1,$(or $3,$$($1)),$(or $4,$$@))
-
 $(eval $(call add-vcmd,CLEAN,,rm -f,$$(subst ~,/,$$*)))
 $(eval $(call add-vcmd,DISTCLEAN,,rm -f,$$(subst ~,/,$$*)))
 $(eval $(call add-vcmd,GEN,gen))
 $(eval $(call add-vcmd,LN,,ln))
-$(eval $(call add-vcmd,HOSTCC,,gcc))
 
 overrides := $(os) $(notdir $(configs))
 collect-overrides = $($1) $(foreach o,$(overrides),$($1-$o))
@@ -214,9 +219,6 @@ print-variables :
 	$(foreach v,$(sort $(if $(verbose),$(.VARIABLES),$(filter-out \
 	  $(startup-vars),$(.VARIABLES)))),$(info $v=$(value $v)))
 	@true
-
-make/nrmake.so: make/nrmake.c | make
-	$(HOSTCC_v) -shared -fPIC $< -o $@
 
 .PHONY : all clean distclean print-% print-data-base print-variables
 
