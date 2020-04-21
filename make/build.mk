@@ -48,17 +48,19 @@ targets := $(or $(MAKECMDGOALS),all)
 .PHONY : $(targets)
 $(wordlist 2,$(words $(targets)),$(targets)) :
 	$(q)true
-$(firstword $(targets)) : keep = MAKEFLAGS TERM
 $(firstword $(targets)) : | $(top-builddir)
-	$(q)env -i $(foreach v,$(keep),$v='$($v)') $(SHELL) $(.SHELLFLAGS) \
-	  'export PATH && $(if $(config-env),. $(config-env) &&) \
-	  $(MAKE) -C $(top-builddir) $(MAKECMDGOALS) \
+	$(q)export PATH && unset MAKELEVEL && \
+	$(if $(config-env),. $(config-env) &&) \
+	$(MAKE) -C $(top-builddir) $(MAKECMDGOALS) \
 	  -f $(call relpath,$(top-srcdir)/make/build.mk,$(top-builddir)) \
 	  O= second-make=1 config-env= os=$(or $(OS),$(shell uname -o)) \
 	  abs-init-srcdir=$(abs-init-srcdir) \
-	  abs-init-builddir=$(abs-init-builddir)'
+	  abs-init-builddir=$(abs-init-builddir)
 $(top-builddir) :
 	$(q)mkdir -p $@
+$(foreach v,$(filter-out MAKEFLAGS TERM,\
+  $(foreach v,$(.VARIABLES),$(if $(filter environment,$(origin $v)),$v))),\
+  $(eval unexport $v))
 else
 .DEFAULT_GOAL = all
 mkdirs =
