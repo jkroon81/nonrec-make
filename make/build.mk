@@ -59,17 +59,17 @@ make/nrmake.so: make/nrmake.c | make
 
 $(nrmake_clearenv MAKEFLAGS,TERM,PATH)
 
-ifndef second-make
+ifneq ($(config-env),)
 targets := $(or $(MAKECMDGOALS),all)
 .DEFAULT_GOAL = $(targets)
 .PHONY : $(targets)
 $(wordlist 2,$(words $(targets)),$(targets)) :
 	$(q)true
 $(firstword $(targets)) : | $(top-builddir)
-	$(q)export PATH && $(if $(config-env),. $(config-env) &&) \
+	$(q)export PATH && . $(config-env) && \
 	  $(MAKE) -C $(top-builddir) $(MAKECMDGOALS) \
 	  -f $(call relpath,$(top-srcdir)/make/build.mk,$(top-builddir)) \
-	  O= second-make=1 config-env= os=$(or $(OS),$(shell uname -o)) \
+	  O= config-env= \
 	  abs-init-srcdir=$(abs-init-srcdir) \
 	  abs-init-builddir=$(abs-init-builddir)
 $(top-builddir) :
@@ -91,6 +91,7 @@ src-fmts := $(patsubst %-source.mk,%,$(notdir $(filter %-source.mk,$(mkfiles))))
 makefile-deps-static := $(wildcard $(top-srcdir)/header.mk $(top-srcdir)/common.mk) \
   $(mkfiles) $(configs)
 makefile-deps = $(makefile-deps-static) $(srcdir)/Makefile
+os := $(or $(OS),$(shell uname -o))
 
 $(eval $(call add-vcmd,CLEAN,,rm -f,$$(subst ~,/,$$*)))
 $(eval $(call add-vcmd,DISTCLEAN,,rm -f,$$(subst ~,/,$$*)))
@@ -228,7 +229,7 @@ whitelist += abs-top-builddir abs-top-srcdir anc down-path gen-makefile \
 $(foreach v,\
   $(filter-out $(whitelist) $(startup-vars),$(pre-parse-vars) pre-parse-vars),\
   $(eval undefine $v))
-$(foreach v,config-env O second-make V,$(eval override undefine $v))
+$(foreach v,config-env O V,$(eval override undefine $v))
 
 endif
 endif

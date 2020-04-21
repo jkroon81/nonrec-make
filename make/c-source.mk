@@ -1,4 +1,4 @@
-CC ?= $(CROSS_COMPILE)gcc
+CC = $(CROSS_COMPILE)gcc
 
 $(eval $(call add-vcmd,CC))
 $(eval $(call add-vcmd,CCLD,,$$(CC)))

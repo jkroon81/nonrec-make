@@ -1,4 +1,4 @@
-CXX ?= $(CROSS_COMPILE)g++
+CXX = $(CROSS_COMPILE)g++
 
 $(eval $(call add-vcmd,CXX))
 $(eval $(call add-vcmd,CXXLD,,$$(CXX)))

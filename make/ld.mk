@@ -8,8 +8,8 @@ subdir-hooks   += collect-dlls
 ld-target-vars += dlls
 endif
 
-AR      ?= $(CROSS_COMPILE)ar
-OBJDUMP ?= $(CROSS_COMPILE)objdump
+AR      = $(CROSS_COMPILE)ar
+OBJDUMP = $(CROSS_COMPILE)objdump
 
 $(eval $(call add-vcmd,AR))
 $(eval $(call add-vcmd,OBJDUMP))

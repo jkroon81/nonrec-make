@@ -1,4 +1,4 @@
-AS ?= $(CROSS_COMPILE)as
+AS = $(CROSS_COMPILE)as
 
 $(eval $(call add-vcmd,AS))
 

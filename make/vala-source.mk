@@ -1,4 +1,4 @@
-VALAC ?= valac
+VALAC = valac
 
 $(eval $(call add-vcmd,VALAC,,,$$(@:%.vala-stamp=%)))
 
