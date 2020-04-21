@@ -14,6 +14,7 @@ static char* nrmake_subdir(const char *name, unsigned int argc, char **argv)
     d = opendir(argv[0]);
     assert(d != NULL);
     char *subdir = NULL;
+    char *tail = NULL;
     while((dir = readdir(d)) != NULL) {
         if (dir->d_type == DT_DIR) {
             if (strcmp(dir->d_name, ".") == 0 ||
@@ -27,9 +28,14 @@ static char* nrmake_subdir(const char *name, unsigned int argc, char **argv)
                 if (subdir == NULL) {
                     subdir = gmk_alloc(1024);
                     memset(subdir, 0, 1024);
+                    tail = subdir;
                 }
-                strcat(subdir, dir->d_name);
-                strcat(subdir, " ");
+                size_t len = strlen(dir->d_name);
+                memcpy(tail, dir->d_name, len);
+                tail += len;
+                *tail = ' ';
+                tail++;
+                *tail = '\0';
             }
         }
     }
