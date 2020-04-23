@@ -30,7 +30,6 @@ define add-ld-cpp-source
 $(if $(skip-deps),,-include $(builddir)/$2.d)
 $(call collect-flags,$2.o,cxxflags,CXXFLAGS,$1)
 $(call tflags,$1,objs) += $(call bpath,$2.o)
-$(call bpath,$2.i) $(call bpath,$2.s) : $(call bpath,$2.o)
 endef
 
 add-ld-cpp-sharedlib = $(call tflags,$1,cxxflags-append) += -fpic

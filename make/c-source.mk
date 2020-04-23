@@ -30,7 +30,6 @@ define add-ld-c-source
 $(if $(skip-deps),,-include $(builddir)/$2.d)
 $(call collect-flags,$2.o,cflags,CFLAGS,$1)
 $(call tflags,$1,objs) += $(call bpath,$2.o)
-$(call bpath,$2.i) $(call bpath,$2.s) : $(call bpath,$2.o)
 endef
 
 add-ld-c-sharedlib = $(call tflags,$1,cflags-append) += -fpic
