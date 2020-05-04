@@ -49,7 +49,7 @@ targets := $(or $(MAKECMDGOALS),all)
 $(wordlist 2,$(words $(targets)),$(targets)) :
 	$(q)true
 $(firstword $(targets)) : | $(top-builddir)
-	$(q)export PATH && unset MAKELEVEL && \
+	$(q)unset MAKELEVEL && \
 	$(if $(config-env),. $(config-env) &&) \
 	$(MAKE) -C $(top-builddir) $(MAKECMDGOALS) \
 	  -f $(call relpath,$(top-srcdir)/make/build.mk,$(top-builddir)) \
@@ -58,9 +58,6 @@ $(firstword $(targets)) : | $(top-builddir)
 	  abs-init-builddir=$(abs-init-builddir)
 $(top-builddir) :
 	$(q)mkdir -p $@
-$(foreach v,$(filter-out MAKEFLAGS TERM,\
-  $(foreach v,$(.VARIABLES),$(if $(filter environment,$(origin $v)),$v))),\
-  $(eval unexport $v))
 else
 .DEFAULT_GOAL = all
 mkdirs =
