@@ -75,9 +75,10 @@ src-fmts := $(patsubst %-source.mk,%,$(notdir $(filter %-source.mk,$(mkfiles))))
 makefile-deps-static := $(wildcard $(top-srcdir)/header.mk $(top-srcdir)/common.mk) \
   $(mkfiles) $(configs)
 makefile-deps = $(makefile-deps-static) $(srcdir)/Makefile
+cols := $(shell tput cols)
 
 define add-vcmd-arg
-$1 = $(if $(verbose),$3,@printf "  %-9s %s\n" $2 \
+$1 = $(if $(verbose),$3,@printf "%$(cols)s\r  %-9s %s\n" "($$?)" $2 \
   $$(call relpath,$4,$(init-builddir));$3)
 whitelist += $1 $2
 endef
