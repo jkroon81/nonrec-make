@@ -105,8 +105,8 @@ endef
 add-ld-lib = $(call $0-real,$(call ld-$2-filename,$1),$1,$2)
 define add-ld-lib-real
 $(foreach v,$(ld-target-vars), \
-  $(eval $1-$v = $($2-$v)) \
-  $(foreach o,$(overrides),$(eval $1-$v-$o = $($2-$v-$o))) \
+  $(eval $1-$v = $(value $2-$v)) \
+  $(foreach o,$(overrides),$(eval $1-$v-$o = $(value $2-$v-$o))) \
   $(foreach n,$(filter $2-$v%,$(.VARIABLES)),$(eval undefine $n)))
 $(call add-ld-$3-real,$1,$2)
 endef
