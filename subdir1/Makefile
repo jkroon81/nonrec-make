@@ -3,6 +3,7 @@ ld-sharedlib = shared
 test2-sources = main2.c kalle/puh.S sven/katt.S
 test2-staticlibs = $(top-builddir)/subdir2/foo
 test2-cflags = -I$(top-srcdir)/subdir2
+test2-ldflags = -Wl,-z -Wl,noexecstack
 kalle/puh.o-asflags = --reduce-memory-overheads
 robert/test5-sources = main5.c nils/gen.c
 robert/test5-cflags = -I$(top-srcdir)/subdir2
